@@ -1,0 +1,168 @@
+{
+  "theme": "dark",
+  "typography": {
+    "headings": {
+      "fontFamily": "Orbitron, sans-serif",
+      "weights": [400, 700, 900],
+      "sizes": {
+        "h1": "text-4xl sm:text-5xl lg:text-6xl tracking-tighter",
+        "h2": "text-2xl sm:text-3xl lg:text-4xl tracking-tight",
+        "h3": "text-xl sm:text-2xl tracking-tight",
+        "h4": "text-lg sm:text-xl"
+      }
+    },
+    "body": {
+      "fontFamily": "IBM Plex Sans, sans-serif",
+      "weights": [400, 500, 600],
+      "sizes": {
+        "base": "text-base",
+        "small": "text-sm",
+        "label": "text-xs uppercase tracking-[0.2em]"
+      }
+    },
+    "monospace": {
+      "fontFamily": "JetBrains Mono, monospace",
+      "usage": "Programming cards, timers, XP, stats, terminal outputs"
+    }
+  },
+  "colors": {
+    "background": {
+      "main": "#0a0a0c",
+      "surface": "#131316",
+      "surface_elevated": "#1c1c22",
+      "canvas_floor": "#1a1a1a"
+    },
+    "text": {
+      "primary": "#f8f9fa",
+      "secondary": "#a1a1aa",
+      "muted": "#71717a"
+    },
+    "brand": {
+      "primary": "#f97316",
+      "primary_hover": "#ea580c",
+      "secondary": "#8b5cf6",
+      "secondary_hover": "#7c3aed"
+    },
+    "game_elements": {
+      "laser": "#ff8c00",
+      "conveyor": "#8a2be2",
+      "black_hole": "#000000",
+      "shield": "#4338ca",
+      "robot_red": "#ef4444",
+      "robot_blue": "#3b82f6",
+      "robot_green": "#10b981",
+      "robot_yellow": "#eab308"
+    },
+    "status": {
+      "success": "#10b981",
+      "warning": "#f59e0b",
+      "error": "#ef4444",
+      "info": "#3b82f6"
+    },
+    "borders": {
+      "subtle": "rgba(255, 255, 255, 0.1)",
+      "strong": "rgba(255, 255, 255, 0.2)"
+    }
+  },
+  "visual_enhancers": {
+    "textures": [
+      "Subtle noise overlay on the background to make it feel less flat and more industrial.",
+      "Canvas grid should feature metallic tile patterns or a dark grid with glowing intersection points."
+    ],
+    "shadows": {
+      "glow_primary": "drop-shadow-[0_0_8px_rgba(249,115,22,0.5)]",
+      "glow_secondary": "drop-shadow-[0_0_8px_rgba(139,92,246,0.5)]",
+      "ambient": "shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
+    },
+    "surfaces": [
+      "Use Retro-Futurism/Terminal look for UI panels (deep black backgrounds, high-contrast borders).",
+      "Solid flat surfaces for game UI to avoid distraction; NO heavy glassmorphism for programming slots to maintain clarity.",
+      "NEVER use complete transparent background in header, overlays, any surface that has content under it."
+    ],
+    "borders": "1px solid rgba(255, 255, 255, 0.1) on panels. Programming slots can have dashed borders when empty."
+  },
+  "layouts": {
+    "game_view": {
+      "desktop": "Grid-based with central Canvas (col-span-8 or 9) and sidebar (col-span-4 or 3) for programming cards, health bars, chat.",
+      "mobile": "Stack view. Canvas at the top (max 50vh) and programming interface at the bottom (drag & drop touch friendly)."
+    },
+    "lobby": {
+      "desktop": "Bento Grid (MODE B: High Density). Room lists, chat, and player stats tightly packed with 1px borders.",
+      "mobile": "Single column vertical list."
+    },
+    "programming_interface": {
+      "structure": "Horizontal row of 6 empty slots. Below them, a hand of available action cards. Players drag from hand to slots."
+    }
+  },
+  "components": {
+    "cards": {
+      "style": "Flat rectangle with solid dark backgrounds. 1px border. Hover state lifts (-translate-y-1) and glows. When slotted, border turns to success/primary color."
+    },
+    "buttons": {
+      "style": "Sharp edges (rounded-none or rounded-sm). Industrial look. Hover: highlight with primary color and add text-shadow.",
+      "primary": "bg-[#f97316] text-black font-bold uppercase tracking-widest",
+      "secondary": "bg-transparent border border-[#8b5cf6] text-[#8b5cf6] hover:bg-[#8b5cf6]/10"
+    },
+    "inputs": {
+      "style": "Flat, bottom border only, or fully enclosed with 1px border. bg-[#1c1c22]."
+    },
+    "health_bars": {
+      "style": "Segmented blocks (5 PV = 5 blocks). Filled with robot color, empty is dark gray."
+    }
+  },
+  "motion": {
+    "ui": [
+      "Hover states on programming cards (lift and scale slightly).",
+      "Staggered entrance for lobby rooms.",
+      "Countdown timer pulse effect on last 10 seconds."
+    ],
+    "canvas": [
+      "Smooth interpolation between grid cells during robot movement.",
+      "Laser firing animation (flash opacity 1 to 0.5).",
+      "Shield pulsing (scale 1 to 1.05 with sine wave).",
+      "Explosion particles on death."
+    ]
+  },
+  "accessibility": {
+    "contrast": "Ensure all text against dark backgrounds meets APCA guidelines. Use bright colors for text/icons on dark surfaces.",
+    "interactions": "All draggable elements (cards) must also be selectable via tap/click to slot into the next available space for accessibility.",
+    "testing": "All interactive elements MUST include a 'data-testid' attribute (e.g., 'data-testid=\"card-move-forward\"', 'data-testid=\"slot-1\"')."
+  },
+  "media": {
+    "icons": {
+      "library": "@phosphor-icons/react",
+      "style": "Duotone or bold to match industrial theme."
+    },
+    "image_urls": [
+      {
+        "url": "https://images.unsplash.com/photo-1666555038185-8323c553de64?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2ODl8MHwxfHNlYXJjaHw0fHxkYXJrJTIwaW5kdXN0cmlhbCUyMG1ldGFsJTIwdGV4dHVyZXxlbnwwfHx8fDE3OTE5OTUyNTR8MA&ixlib=rb-4.1.0&q=85",
+        "category": "background",
+        "description": "Dark grey industrial grainy texture for landing page or lobby background."
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1636776732114-d38e40ac2837?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDN8MHwxfHNlYXJjaHwxfHxjb21iYXQlMjByb2JvdHxlbnwwfHx8fDE3OTE5OTUyNjJ8MA&ixlib=rb-4.1.0&q=85",
+        "category": "hero",
+        "description": "Robot visualization for the landing page or about section."
+      }
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Build a robust 2D Canvas engine for the game board, supporting tile maps, robot entities, lasers, conveyors, and animations.",
+    "Implement the Sandbox Admin mode first (priority V1) with step-by-step resolution of 2 robots.",
+    "Use Shadcn UI for the Lobby, Wait Room, and Profile, but heavily customize to fit the 'Retro-Futurism/Terminal' look.",
+    "Programming interface must support Drag and Drop (use dnd-kit or react-beautiful-dnd) AND simple click-to-slot fallback.",
+    "Implement custom JWT auth and multi-language support (i18n, FR/EN).",
+    "Use pure CSS/Tailwind for structural layouts over excessive Shadcn wrappers for complex game views.",
+    "You have .js files not .tsx files. ADHERE STRICTLY TO .js/.jsx extensions for React components and files."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "Do not use generic centered layouts or simplistic gradients.",
+    "Create depth through layered design elements with z-index hierarchy and ambient glows.",
+    "DO NOT use universal transition 'transition: all'.",
+    "DO NOT add '.App { text-align: center; }' in the css file.",
+    "Use sonner for toasts.",
+    "Never use AI assistant Emoji characters like 🤖🧠💭💡🔮🎯 for icons.",
+    "Use @phosphor-icons/react or lucide-react for game icons.",
+    "All interactive and key informational elements MUST include a data-testid attribute to facilitate robust automated testing."
+  ]
+}

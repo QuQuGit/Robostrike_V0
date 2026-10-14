@@ -1,0 +1,91 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --background: 240 10% 4%;
+    --foreground: 210 20% 98%;
+    --card: 240 7% 9%;
+    --card-foreground: 210 20% 98%;
+    --popover: 240 7% 9%;
+    --popover-foreground: 210 20% 98%;
+    --primary: 24 95% 53%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 258 90% 66%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 240 5% 15%;
+    --muted-foreground: 240 5% 65%;
+    --accent: 258 90% 66%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 6% 18%;
+    --input: 240 6% 18%;
+    --ring: 24 95% 53%;
+    --radius: 0.25rem;
+}
+
+* {
+    border-color: hsl(var(--border));
+}
+
+body {
+    margin: 0;
+    font-family: 'IBM Plex Sans', sans-serif;
+    background-color: #0a0a0c;
+    color: #f8f9fa;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.font-display {
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 0.02em;
+}
+
+.font-mono-rs {
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.rs-noise {
+    background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.04) 1px, transparent 0);
+    background-size: 22px 22px;
+}
+
+.rs-panel {
+    background-color: #131316;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.rs-glow-orange {
+    box-shadow: 0 0 18px rgba(249, 115, 22, 0.35);
+}
+
+.rs-glow-purple {
+    box-shadow: 0 0 18px rgba(139, 92, 246, 0.35);
+}
+
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #0a0a0c;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #2a2a32;
+    border-radius: 0;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #f97316;
+}
+
+::selection {
+    background: rgba(249, 115, 22, 0.4);
+    color: #fff;
+}
