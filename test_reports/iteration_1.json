@@ -1,0 +1,44 @@
+{
+  "summary": "Comprehensive backend + frontend testing of Robostrike V1. Fixed one critical backend bug in the engine (unhashable dict used as dmg_map key) that was crashing weapon resolution and any board-laser hit with 500 errors. After fix, all 24 pytest cases pass (auth, boards, sandbox, engine movement/push/weapons/shield/holes/respawn/elimination/frame-shape). Full frontend playwright flow verified: landing + lang-toggle FR/EN, register -> /home welcome, sandbox 2-robot programming -> resolve -> 24-frame playback (prev/play/next, Image x/24), new-turn re-commit, profile & leaderboard pages load.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "game_engine.py:_resolve_deaths/_apply_damage", "issue": "`invuln` flag set on respawn is never cleared, so a respawned robot is permanently immune for the rest of the turn (and even the next turn until a new resolve starts since engine is stateless, OK). Spec says 'brief invulnerability' - consider clearing after N slots or at next death."},
+      {"endpoint": "game_engine.py", "issue": "Shield phase precedes weapons but uses r['program'][slot] == 'shield' only on live robots; an eliminated robot's shield flag isn't reset to False (dead code path but worth cleaning)."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Leaderboard", "issues": ["Shows 'Aucun pilote classé pour l'instant' even though /api/leaderboard returns registered users with xp=0. Either filter at API (xp>0) or render zero-xp players too."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_robostrike.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Review the engine fix in /app/backend/game_engine.py (changed dmg_map to be keyed by id(robot) with (robot, dmg) tuples in _apply_damage, _board_effects, and weapon aggregation in resolve_turn).",
+    "Clear 'invuln' flag after respawn invulnerability window expires (currently sticky for remainder of turn).",
+    "Leaderboard: decide whether zero-xp players should appear in the ranked list; UI currently shows an empty message even when users exist."
+  ],
+  "critical_code_review_comments": [
+    "CRITICAL (fixed): dmg_map keyed by robot dict is a TypeError at runtime, broke all weapon damage and any board-laser hit. Fixed in-place.",
+    "Engine mutates its input via deepcopy at top of resolve_turn which is correct. Pydantic validation on RobotState prevents unknown fields.",
+    "No MongoDB _id leaks in auth responses - public_user() correctly stringifies id.",
+    "Server uses os.environ[...] for MONGO_URL/DB_NAME/JWT_SECRET without defaults - good fail-fast posture.",
+    "Admin seed is idempotent and updates password if changed - matches auth playbook."
+  ],
+  "updated_files": [
+    "/app/backend/game_engine.py (fixed dmg_map hashable-key bug in 3 locations)",
+    "/app/backend/tests/test_robostrike.py (new pytest suite, 24 tests)"
+  ],
+  "success_rate": {"backend": "100% (24/24)", "frontend": "100% of flows exercised"},
+  "test_credentials": "admin@robostrike.com / admin123; dynamic test users created via /api/auth/register with uuid email.",
+  "seed_data_creation": "Several ephemeral TEST_ users created via register for auth tests (no cleanup - low volume).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend engine bug (unhashable dict as dmg_map key) was fixed in game_engine.py. Rerun pytest /app/backend/tests/test_robostrike.py with `-o addopts=''` to bypass xdist (pytest-xdist plugin is loaded via pytest.ini addopts but no -n worker count causes argparse error). Use frontend/.env REACT_APP_BACKEND_URL. For engine assertion tests, avoid placing robots in arena board-laser columns (x=4 south, x=5 north) and cross/foundry laser lines; prefer y=1 x=1..3 for arena.",
+  "rca of the issue": "Root cause: _apply_damage and board_effects accumulated damage with `dmg_map[robot_dict] = ...`. Python dicts are unhashable so this raised TypeError and FastAPI returned 500 for any /api/sandbox/resolve call where a weapon hit landed or a board laser touched a robot. Reproduction: POST /api/sandbox/resolve with any 2-robot setup where one plays 'laser' and the other is in line-of-sight; backend logs show `TypeError: unhashable type: 'dict'` at game_engine.py line 300. Mitigation: key dmg_map by id(robot) and store (robot, cumulative_dmg) tuples, then iterate values in _apply_damage."
+}

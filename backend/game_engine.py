@@ -153,7 +153,8 @@ def _fire_blast(board, robots, shooter, dmg, beams):
 
 
 def _apply_damage(dmg_map, events):
-    for r, dmg in dmg_map.items():
+    # dmg_map is {id(robot): (robot, dmg)}
+    for _, (r, dmg) in dmg_map.items():
         if r.get("shield"):
             events.append({"t": "shielded", "robot": r["name"], "dmg": dmg})
             continue
@@ -200,12 +201,14 @@ def _board_effects(board, ws, robots, events, beams):
             cx, cy = nx, ny
             hit = _robot_at(robots, cx, cy)
             if hit is not None:
-                dmg_map[hit] = dmg_map.get(hit, 0) + dmg
+                key = id(hit)
+                prev = dmg_map.get(key, (hit, 0))[1]
+                dmg_map[key] = (hit, prev + dmg)
                 beams.append({"type": "board_laser", "from": [x, y], "to": [cx, cy]})
                 break
         else:
             beams.append({"type": "board_laser", "from": [x, y], "to": [cx, cy]})
-    for r, dmg in dmg_map.items():
+    for _, (r, dmg) in dmg_map.items():
         if r.get("shield") or r.get("invuln"):
             continue
         r["hp"] = max(0, r["hp"] - dmg)
@@ -297,7 +300,9 @@ def resolve_turn(board, robots_in):
             else:
                 hits = _fire_line(board, ws, robots, r, dmg, rng, beams)
             for hit, dv in hits:
-                dmg_map[hit] = dmg_map.get(hit, 0) + dv
+                key = id(hit)
+                prev = dmg_map.get(key, (hit, 0))[1]
+                dmg_map[key] = (hit, prev + dv)
         _apply_damage(dmg_map, events)
         _resolve_deaths(board, robots, events)
         frames.append(_frame(slot, "shots", robots, events, beams))
