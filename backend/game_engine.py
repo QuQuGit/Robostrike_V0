@@ -117,7 +117,7 @@ def _cell_center(x, y):
     return [x, y]
 
 
-def _fire_line(board, ws, robots, shooter, dmg, rng, beams):
+def _fire_line(board, ws, robots, shooter, dmg, rng, beams, btype):
     x, y, d = shooter["x"], shooter["y"], shooter["dir"]
     steps = rng if rng is not None else (board["width"] + board["height"])
     cx, cy = x, y
@@ -130,11 +130,11 @@ def _fire_line(board, ws, robots, shooter, dmg, rng, beams):
         cx, cy = nx, ny
         hit = _robot_at(robots, cx, cy, exclude=shooter)
         if hit is not None:
-            beams.append({"type": "laser", "from": _cell_center(x, y),
-                          "to": _cell_center(cx, cy), "color": shooter["color"]})
+            beams.append({"type": btype, "from": _cell_center(x, y),
+                          "to": _cell_center(cx, cy), "color": shooter["color"], "hit": True})
             return [(hit, dmg)]
-    beams.append({"type": "laser", "from": _cell_center(x, y),
-                  "to": _cell_center(cx, cy), "color": shooter["color"]})
+    beams.append({"type": btype, "from": _cell_center(x, y),
+                  "to": _cell_center(cx, cy), "color": shooter["color"], "hit": False})
     return []
 
 
@@ -298,7 +298,7 @@ def resolve_turn(board, robots_in):
             if act == "blast":
                 hits = _fire_blast(board, robots, r, dmg, beams)
             else:
-                hits = _fire_line(board, ws, robots, r, dmg, rng, beams)
+                hits = _fire_line(board, ws, robots, r, dmg, rng, beams, act)
             for hit, dv in hits:
                 key = id(hit)
                 prev = dmg_map.get(key, (hit, 0))[1]
