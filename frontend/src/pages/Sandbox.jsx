@@ -8,7 +8,7 @@ import GameCanvas from "../components/game/GameCanvas";
 import ProgrammingPanel from "../components/game/ProgrammingPanel";
 import RobotHud from "../components/game/RobotHud";
 import {
-  Play, Pause, SkipBack, SkipForward, RefreshCw, Swords, Trophy, ArrowLeft,
+  Play, Pause, SkipBack, SkipForward, RefreshCw, Swords, Trophy, ArrowLeft, Gauge,
 } from "lucide-react";
 
 const SLOTS = 6;
@@ -29,6 +29,7 @@ export default function Sandbox() {
   const [playing, setPlaying] = useState(false);
   const [result, setResult] = useState(null);
   const [turn, setTurn] = useState(1);
+  const [speed, setSpeed] = useState(1);
 
   const startSandbox = useCallback(async (bid, n) => {
     const { data } = await api.post("/sandbox/new", { board_id: bid, num_robots: n });
@@ -58,9 +59,9 @@ export default function Sandbox() {
       setPlaying(false);
       return;
     }
-    const id = setTimeout(() => setFrameIdx((i) => i + 1), 650);
+    const id = setTimeout(() => setFrameIdx((i) => i + 1), 650 / speed);
     return () => clearTimeout(id);
-  }, [playing, frames, frameIdx]);
+  }, [playing, frames, frameIdx, speed]);
 
   const display = frames ? frames[frameIdx].robots : robots;
   const beams = frames ? frames[frameIdx].beams : [];
@@ -176,6 +177,9 @@ export default function Sandbox() {
                     {playing ? <Pause size={14} /> : <Play size={14} />}
                   </button>
                   <button data-testid="step-next" onClick={() => { setPlaying(false); setFrameIdx((i) => Math.min(frames.length - 1, i + 1)); }} className="rs-icon-btn"><SkipForward size={14} /></button>
+                  <button data-testid="speed-btn" onClick={() => setSpeed((v) => (v === 1 ? 2 : v === 2 ? 4 : 1))} className="rs-icon-btn font-mono-rs text-[11px] px-2 flex items-center gap-1" title={t("sandbox.speed")}>
+                    <Gauge size={14} /> ×{speed}
+                  </button>
                   <span className="font-mono-rs text-[11px] text-zinc-300 px-1" data-testid="frame-label">{t("sandbox.frame", { i: frameIdx + 1, n: frames.length })}</span>
                   <button data-testid="new-turn-btn" onClick={newTurn} className="rs-go-btn rs-go-purple">
                     <RefreshCw size={13} /> {t("sandbox.newTurn")}
