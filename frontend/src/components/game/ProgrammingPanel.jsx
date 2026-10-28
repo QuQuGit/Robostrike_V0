@@ -1,96 +1,91 @@
-import React from "react";
-import { ACTIONS, CAT_COLORS } from "./cards";
+import React, { useRef } from "react";
+import { ACTIONS, CAT_COLORS, CAT_ICON, slotNeon } from "./cards";
 import { useI18n } from "../../i18n";
-import { X, Shuffle, Eraser } from "lucide-react";
+import { ChevronLeft, ChevronRight, Shuffle, Eraser } from "lucide-react";
 
-export default function ProgrammingPanel({
-  program, onAdd, onRemove, onRandom, onClear, disabled,
-}) {
+function ActionCard({ a, disabled, onClick, t }) {
+  const Icon = a.icon, Cat = CAT_ICON[a.cat], col = CAT_COLORS[a.cat];
+  return (
+    <button
+      data-testid={`card-${a.id}`}
+      disabled={disabled}
+      onClick={onClick}
+      className="rs-card snap-start shrink-0"
+      style={{ "--c": col }}
+    >
+      <span className="rs-card-head" style={{ color: col }}>{t(`act.${a.id}`)}</span>
+      <span className="rs-card-body">
+        <Icon size={30} strokeWidth={2.4} style={{ color: `color-mix(in srgb, ${col} 65%, #fff)`, filter: `drop-shadow(0 0 7px ${col})` }} />
+      </span>
+      <span className="rs-card-foot"><Cat size={10} /></span>
+    </button>
+  );
+}
+
+function Slot({ i, act, disabled, onRemove, t }) {
+  const def = act ? ACTIONS.find((a) => a.id === act) : null;
+  const Icon = def?.icon;
+  const neon = def ? slotNeon(def.cat) : null;
+  return (
+    <button
+      data-testid={`slot-${i}`}
+      onClick={() => !disabled && act && onRemove(i)}
+      disabled={disabled}
+      title={act ? t(`act.${act}`) : ""}
+      className={`rs-slot ${act ? "rs-slot-on" : ""}`}
+      style={neon ? { "--n": neon } : undefined}
+    >
+      <span className="rs-slot-num">{i + 1}</span>
+      {Icon && <Icon className="rs-slot-icon" strokeWidth={2.4} style={{ color: neon }} />}
+    </button>
+  );
+}
+
+export default function ProgrammingPanel({ program, onAdd, onRemove, onRandom, onClear, disabled, robot }) {
   const { t } = useI18n();
+  const trayRef = useRef(null);
   const filled = program.filter(Boolean).length;
+  const scroll = (d) => trayRef.current?.scrollBy({ left: d * 220, behavior: "smooth" });
 
   return (
-    <div className="rs-panel p-4 rounded-sm" data-testid="programming-panel">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="font-display text-sm uppercase tracking-[0.2em] text-[#f97316]">
-          {t("sandbox.slots")}
-        </h3>
-        <span className="font-mono-rs text-xs text-muted-foreground">{filled}/6</span>
+    <div className="rs-steel rs-bolts rounded-lg p-2.5 sm:p-3 space-y-2.5" data-testid="programming-panel">
+      <div className="flex items-center justify-between px-1">
+        <span className="font-title text-xs sm:text-sm uppercase tracking-[0.18em] text-zinc-200 flex items-center gap-2">
+          {robot && <span className="w-2.5 h-2.5 rounded-full" style={{ background: robot.color, boxShadow: `0 0 8px ${robot.color}` }} />}
+          {t("sandbox.hand")}
+        </span>
+        <div className="flex gap-1.5">
+          <button data-testid="program-random" disabled={disabled} onClick={onRandom} className="rs-mini-btn">
+            <Shuffle size={12} /> {t("sandbox.random")}
+          </button>
+          <button data-testid="program-clear" disabled={disabled} onClick={onClear} className="rs-mini-btn">
+            <Eraser size={12} /> {t("sandbox.clear")}
+          </button>
+        </div>
       </div>
 
-      {/* 6 slots */}
-      <div className="grid grid-cols-6 gap-2 mb-4">
-        {program.map((act, i) => {
-          const def = act ? ACTIONS.find((a) => a.id === act) : null;
-          const Icon = def?.icon;
-          return (
-            <button
-              key={i}
-              data-testid={`slot-${i}`}
-              onClick={() => !disabled && act && onRemove(i)}
-              disabled={disabled}
-              className="aspect-square rounded-sm flex flex-col items-center justify-center text-[10px] relative transition-colors"
-              style={{
-                border: act ? `1px solid ${CAT_COLORS[def.cat]}` : "1px dashed rgba(255,255,255,0.18)",
-                background: act ? "rgba(255,255,255,0.03)" : "transparent",
-              }}
-            >
-              <span className="absolute top-0.5 left-1 font-mono-rs text-[9px] text-muted-foreground">
-                {i + 1}
-              </span>
-              {Icon && <Icon size={18} style={{ color: CAT_COLORS[def.cat] }} />}
-              {act && (
-                <span className="font-mono-rs mt-0.5 leading-none text-[8px] text-muted-foreground truncate w-full px-0.5 text-center">
-                  {t(`act.${act}`)}
-                </span>
-              )}
-            </button>
-          );
-        })}
+      {/* card tray */}
+      <div className="rs-screen rounded-md flex items-stretch gap-1 p-1.5">
+        <button data-testid="tray-left" onClick={() => scroll(-1)} className="rs-tray-arrow"><ChevronLeft size={18} /></button>
+        <div ref={trayRef} className="flex-1 min-w-0 flex gap-2 overflow-x-auto snap-x rs-tray py-1" data-testid="card-tray">
+          {ACTIONS.map((a) => (
+            <ActionCard key={a.id} a={a} t={t} disabled={disabled || filled >= 6} onClick={() => onAdd(a.id)} />
+          ))}
+        </div>
+        <button data-testid="tray-right" onClick={() => scroll(1)} className="rs-tray-arrow"><ChevronRight size={18} /></button>
       </div>
 
-      {/* action palette */}
-      <h4 className="font-display text-xs uppercase tracking-[0.2em] text-muted-foreground mb-2">
-        {t("sandbox.hand")}
-      </h4>
-      <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 mb-4">
-        {ACTIONS.map((a) => {
-          const Icon = a.icon;
-          return (
-            <button
-              key={a.id}
-              data-testid={`card-${a.id}`}
-              disabled={disabled || filled >= 6}
-              onClick={() => onAdd(a.id)}
-              className="rs-panel rounded-sm py-2 flex flex-col items-center gap-1 hover:-translate-y-0.5 transition-transform disabled:opacity-40 disabled:translate-y-0"
-              style={{ borderColor: `${CAT_COLORS[a.cat]}55` }}
-            >
-              <Icon size={18} style={{ color: CAT_COLORS[a.cat] }} />
-              <span className="font-mono-rs text-[8px] text-muted-foreground leading-none text-center">
-                {t(`act.${a.id}`)}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="flex gap-2">
-        <button
-          data-testid="program-random"
-          disabled={disabled}
-          onClick={onRandom}
-          className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-sm border border-[#8b5cf6] text-[#8b5cf6] text-xs uppercase tracking-wider hover:bg-[#8b5cf6]/10 disabled:opacity-40"
-        >
-          <Shuffle size={13} /> {t("sandbox.random")}
-        </button>
-        <button
-          data-testid="program-clear"
-          disabled={disabled}
-          onClick={onClear}
-          className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-sm border border-border text-muted-foreground text-xs uppercase tracking-wider hover:text-white disabled:opacity-40"
-        >
-          <Eraser size={13} /> {t("sandbox.clear")}
-        </button>
+      {/* 6 program slots */}
+      <div className="rs-screen rounded-md p-2 sm:p-2.5">
+        <div className="flex items-center justify-between mb-1.5 px-0.5">
+          <span className="font-title text-[10px] uppercase tracking-[0.2em] text-zinc-400">{t("sandbox.slots")}</span>
+          <span className="font-mono-rs text-[10px] text-zinc-400" data-testid="slots-count">{filled}/6</span>
+        </div>
+        <div className="grid grid-cols-6 gap-1.5 sm:gap-2.5">
+          {program.map((act, i) => (
+            <Slot key={i} i={i} act={act} disabled={disabled} onRemove={onRemove} t={t} />
+          ))}
+        </div>
       </div>
     </div>
   );
