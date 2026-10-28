@@ -219,7 +219,7 @@ export default function Room() {
             <div className="rs-steel rounded-md p-2 flex items-center gap-2 flex-wrap" style={{ borderColor: "#ff9a1f" }} data-testid="gameover-banner">
               <Trophy size={18} className="text-[#ff9a1f]" />
               <p className="font-title text-sm text-[#ff9a1f] uppercase">{t("sandbox.gameover")}</p>
-              {room.winner && <p className="font-mono-rs text-xs">{t("sandbox.winner", { name: room.winner })}</p>}
+              {room.winner ? <p className="font-mono-rs text-xs">{t("sandbox.winner", { name: room.winner })}</p> : <p className="font-mono-rs text-xs" data-testid="draw-label">{t("room.draw")}</p>}
               {room.host_id === myId && (
                 <button data-testid="rematch-btn" onClick={() => send({ type: "start" })} className="rs-go-btn rs-go-purple ml-auto">{t("room.backLobby")}</button>
               )}

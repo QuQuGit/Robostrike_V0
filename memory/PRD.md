@@ -58,6 +58,14 @@ Déploiement cible : Vercel (front) + Render (back WebSockets) + MongoDB Atlas.
 - Projected movement path removed from the board.
 - Backend: 51/51 pytest.
 
+## Iteration 5 (2026-06) — online matches (tested iter 4-5)
+- Speed remembered in localStorage: rs_speed_sandbox (default ×1), rs_speed_online (default ×4).
+- Animated popups on the canvas: +1 <item>, +N PV (life), -N PV (AFK penalty).
+- Online: in-memory rooms (backend/rooms.py). REST GET/POST /api/rooms, GET /api/rooms/{code}; WS /api/ws/rooms/{code}?token=JWT.
+  Lobby (list + create + join by code), ready / host settings / start (2-4 players), chat, 30s timer, live drafts + submit,
+  1 dmg per empty slot ('penalty' frame, ignores invulnerability), replay_done sync, game over + draw + rematch (back to the room lobby). No XP (user choice).
+- Known limits: rooms are lost if the backend restarts; single server process only.
+
 ## Backlog (prioritized)
 ### P0 (next)
 - Multijoueur temps réel : WebSockets, salons/lobby, salle d'attente, timer 30s, synchro d'état, reconnexion.

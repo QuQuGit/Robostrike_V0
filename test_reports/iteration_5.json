@@ -1,0 +1,31 @@
+{
+  "summary": "Iteration 5: retested the 4 fixes from iteration 4. Backend: 14/15 room tests pass (11 in test_rooms_iter4.py plus 3 new in test_rooms_iter5.py, which has 4 tests); the old 51 tests pass. FIX 1: the next turn starts in under 3s after both clients send replay_done, whichever player submits last. Chat sent by the last submitter during resolving is handled right away. In the UI, the time from the last submit to 'Tour: N+1' (this includes the x4 replay) is about 5.7-6.7s, and 'waiting-others' shows briefly. FIX 2: game over takes 3 turns when the guest submits empty programs. Both clients see gameover-banner with 'Vainqueur : Admin'. Only the host sees rematch-btn (the guest's count is 0). Clicking it sends both clients back to room-lobby, and the host sees start-btn. Tested with desktop host and mobile 390px guest. FIX 3: non-JSON text, max_players 'abc'/null and program:5 no longer close the socket; chat and the ready toggle still work and the player stays connected. FIX 4: creating a room from the lobby UI still works. The new catch shows a toast (code review). No page errors. One leftover edge case: a JSON array payload still kills the socket.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "WS /api/ws/rooms/{code} (server.py:293)", "issue": "A valid JSON message that is not an object (e.g. [1,2,3]) raises AttributeError: 'list' object has no attribute 'get'. It is raised at msg.get('type') == 'leave', which is outside the inner try, so the socket dies (ConnectionClosedError; seen in backend.err.log). Fix: `if not isinstance(msg, dict): continue` right after receive_json."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Room game over (draw)", "issues": ["When every robot is eliminated in the same turn (draw, winner null), the banner only says 'PARTIE TERMINÉE !' with no 'Égalité/Draw' text. The board is then empty and the host's side panel shows 'Votre robot est éliminé'. Consider a draw label."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_rooms_iter5.py", "/app/backend/tests/test_rooms_iter4.py", "/app/test_reports/pytest/pytest_iter5.xml"],
+  "action_items": [
+    "server.py room_ws: skip non-dict JSON messages (isinstance(msg, dict)) so they don't close the socket",
+    "Optional: show a draw message in gameover-banner when room.winner is null"
+  ],
+  "critical_code_review_comments": [
+    "rooms.py: asyncio.create_task(self.resolve()) is fire-and-forget with no reference kept, and its exceptions are not logged. Keep a reference (self._resolve_task) and add a done-callback that logs exceptions",
+    "rooms.py _timer also awaits resolve() directly. That is fine because it runs in its own task"
+  ],
+  "updated_files": ["/app/backend/tests/test_rooms_iter5.py"],
+  "success_rate": {"backend": "93% (14/15 room tests; the only failure is the JSON-array edge case)", "frontend": "100%"},
+  "seed_data_creation": "TEST_ rooms in memory only; they clean themselves up",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Fast UI login: POST /api/auth/login, then localStorage rs_token. Use browser.new_context() for the second player. Cards are card-{left|right|forward|laser...}. When both players submit empty programs, both are eliminated together (a draw). test_rooms_iter5.py::test_json_array_payload_keeps_socket fails until the isinstance fix is in."
+}

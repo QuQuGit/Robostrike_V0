@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="14" time="203.146" timestamp="2026-10-28T17:19:25.537539+00:00" hostname="agent-env-82f340dc-c3d4-48f7-9f21-507bd9c73994"><testcase classname="tests.test_rooms_iter4.TestRoomsRest" name="test_list_requires_auth" time="0.248" /><testcase classname="tests.test_rooms_iter4.TestRoomsWs" name="test_bad_token_and_unknown_room" time="2.910" /><testcase classname="tests.test_rooms_iter4.TestRoomsRest" name="test_create_and_list" time="2.600" /><testcase classname="tests.test_rooms_iter4.TestRoomsRest" name="test_unknown_room_404" time="0.125" /><testcase classname="tests.test_rooms_iter4.TestRoomsWs" name="test_lobby_full_settings_leave" time="1.376" /><testcase classname="tests.test_rooms_iter4.TestRoomsRest" name="test_bad_board_404" time="0.151" /><testcase classname="tests.test_rooms_iter4.TestRoomsRest" name="test_max_players_clamped" time="0.276" /><testcase classname="tests.test_rooms_iter4.TestRoomsWs" name="test_full_match_penalty_and_turn2" time="1.642" /><testcase classname="tests.test_rooms_iter5" name="test_non_json_and_odd_payloads_keep_socket" time="3.323" /><testcase classname="tests.test_rooms_iter4.TestRoomsWs" name="test_afk_timeout_auto_resolve" time="50.724" /><testcase classname="tests.test_rooms_iter5" name="test_json_array_payload_keeps_socket" time="1.565"><failure message="websockets.exceptions.ConnectionClosedError: no close frame received or sent">test_rooms_iter5.py:48: in test_json_array_payload_keeps_socket
+    asyncio.run(run())
+/usr/local/lib/python3.11/asyncio/runners.py:190: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+test_rooms_iter5.py:45: in run
+    await a.send(json.dumps({"type": "chat", "text": "TEST_alive2"}))
+/root/.venv/lib/python3.11/site-packages/websockets/asyncio/connection.py:479: in send
+    async with self.send_context():
+/usr/local/lib/python3.11/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/websockets/asyncio/connection.py:966: in send_context
+    raise self.protocol.close_exc from original_exc
+E   websockets.exceptions.ConnectionClosedError: no close frame received or sent</failure></testcase><testcase classname="tests.test_rooms_iter5" name="test_fast_transition_both_orders" time="194.186"><failure message="TimeoutError">/usr/local/lib/python3.11/asyncio/tasks.py:500: in wait_for
+    return fut.result()
+           ^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/websockets/asyncio/connection.py:305: in recv
+    return await self.recv_messages.get(decode)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/websockets/asyncio/messages.py:158: in get
+    frame = await self.frames.get(not self.closed)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/websockets/asyncio/messages.py:51: in get
+    await self.get_waiter
+E   asyncio.exceptions.CancelledError
+
+The above exception was the direct cause of the following exception:
+test_rooms_iter5.py:78: in test_fast_transition_both_orders
+    asyncio.run(run())
+/usr/local/lib/python3.11/asyncio/runners.py:190: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+test_rooms_iter5.py:62: in run
+    await recv_until(a, "room", lambda m: m["room"]["status"] == "programming" and m["room"]["turn"] == turn, timeout=40)
+test_rooms_iter4.py:48: in recv_until
+    m = json.loads(await asyncio.wait_for(ws.recv(), timeout))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/tasks.py:502: in wait_for
+    raise exceptions.TimeoutError() from exc
+E   TimeoutError</failure></testcase><testcase classname="tests.test_rooms_iter4.TestRoomsWs" name="test_malformed_message_does_not_break_room" time="1.756" /><testcase classname="tests.test_rooms_iter4.TestRoomsWs" name="test_game_over_and_back_to_lobby" time="1.053" /></testsuite></testsuites>

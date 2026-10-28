@@ -290,6 +290,8 @@ async def room_ws(ws: WebSocket, code: str, token: str = ""):
                 msg = await ws.receive_json()
             except ValueError:
                 continue
+            if not isinstance(msg, dict):
+                continue
             if msg.get("type") == "leave":
                 await room.disconnect(u["id"], ws, leaving=True)
                 await ws.close()
