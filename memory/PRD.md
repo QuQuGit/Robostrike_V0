@@ -53,6 +53,11 @@ Déploiement cible : Vercel (front) + Render (back WebSockets) + MongoDB Atlas.
 - Visuals: full-cell conveyors (rails, moving slats, chevrons, rollers), burst icon for Blast, turntables and pickups drawn on the canvas, rolling treads, recoil and muzzle flash.
 - Game screen: site header hidden on /sandbox, compact toolbar (exit, board, robots, reset, FR/EN), everything fits on one desktop screen, smaller cards and slots.
 
+## Iteration 4 (2026-06)
+- A destroyed robot (killed or fallen) loses all its items.
+- Projected movement path removed from the board.
+- Backend: 51/51 pytest.
+
 ## Backlog (prioritized)
 ### P0 (next)
 - Multijoueur temps réel : WebSockets, salons/lobby, salle d'attente, timer 30s, synchro d'état, reconnexion.

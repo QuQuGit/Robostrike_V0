@@ -123,7 +123,8 @@ class TestPickups:
         assert final(d, "R2")["items"] == []
         # next turn pickup is available again
         d2 = resolve(s, [rb("R1", 0, 0, 1, []), rb("R2", 4, 5, 0, ["forward"])])
-        assert "shield" in final(d2, "R2")["items"]
+        m0 = next(f for f in d2["frames"] if f["slot"] == 0 and f["phase"] == "move")
+        assert "shield" in fr(m0, "R2")["items"]
 
 
 # --- rotators

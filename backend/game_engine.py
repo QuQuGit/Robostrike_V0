@@ -270,6 +270,7 @@ def _resolve_deaths(board, robots, events, beams):
         r["lives"] -= 1
         r["alive"] = False
         r["hp"] = 0
+        r["items"] = []
         if r["lives"] <= 0:
             r["eliminated"] = True
             events.append({"t": "eliminated", "robot": r["name"]})

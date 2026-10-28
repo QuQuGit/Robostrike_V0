@@ -128,10 +128,6 @@ export default function Sandbox() {
   const taken = curFrame ? curFrame.taken || [] : [];
 
   const activeRobot = robots[activeIdx];
-  const plans = locked ? [] : robots
-    .map((r, i) => ({ id: r.id, color: r.color, x: r.x, y: r.y, dir: r.dir, program: programs[i] || [], width: board?.width, height: board?.height, eliminated: r.eliminated }))
-    .filter((p) => !p.eliminated && p.program.some(Boolean));
-
   return (
     <div className="rs-machinery min-h-screen lg:h-screen lg:overflow-hidden flex flex-col" style={{ backgroundImage: "linear-gradient(rgba(8,8,10,0.72), rgba(8,8,10,0.86)), url(/assets/machinery.jpg)" }} data-testid="sandbox-page">
       {/* compact game toolbar (site header hidden in game) */}
@@ -165,7 +161,7 @@ export default function Sandbox() {
             <span className="text-zinc-100 shrink-0 ml-2" data-testid="turn-label">{t("game.turn")}: {turn}</span>
           </div>
           <div className="flex-1 min-h-0 flex items-center">
-            {board && <GameCanvas board={board} robots={display} beams={beams} plans={plans} activeId={activeRobot?.id} taken={taken} />}
+            {board && <GameCanvas board={board} robots={display} beams={beams} activeId={activeRobot?.id} taken={taken} />}
           </div>
           <div className="flex justify-center mt-1.5">
             <div className="rs-screen rounded-md flex items-center gap-1.5 px-1.5 py-1 flex-wrap justify-center">

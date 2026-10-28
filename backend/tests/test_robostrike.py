@@ -291,3 +291,9 @@ class TestPickupsAndDeath:
         assert res["frames"][-1]["phase"] == "respawn"
         a = res["robots"][0]
         assert a["lives"] == 2 and a["alive"] and a["invuln"]
+
+
+def test_death_loses_items(session):
+    robots = [_robot("A", 1, 3, 1, ["forward"], items=["bomb", "shield"])]
+    res = _resolve(session, "arena", robots)
+    assert res["robots"][0]["items"] == []
