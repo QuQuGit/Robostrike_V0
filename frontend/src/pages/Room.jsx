@@ -12,14 +12,15 @@ import ProgrammingPanel from "../components/game/ProgrammingPanel";
 import RobotHud from "../components/game/RobotHud";
 import { ChatPanel } from "../components/game/ChatPanel";
 import { BoardShell, PlaybackControls, EventLog, phaseText } from "../components/game/BoardShell";
-import { ArrowLeft, Copy, Crown, Check, Trophy, Timer, Send, WifiOff, Play } from "lucide-react";
+import { ArrowLeft, Copy, Crown, Check, Trophy, Timer, Send, WifiOff, Play, Mail } from "lucide-react";
+import { CONTACT_EMAIL } from "../i18n_extra";
 
 const emptyProg = () => Array(6).fill(null);
 const BG = { backgroundImage: "linear-gradient(rgba(8,8,10,0.72), rgba(8,8,10,0.86)), url(/assets/machinery.jpg)" };
 const FATAL = { "Room is full": "room.full", "Game already started": "room.started", not_found: "lobby.notFound" };
 
 function RoomToolbar({ room, onLeave }) {
-  const { t, lang, setLang } = useI18n();
+  const { t, lang, toggleLang } = useI18n();
   const copy = () => {
     navigator.clipboard?.writeText(room.code);
     toast.success(t("room.copied"));
@@ -31,7 +32,8 @@ function RoomToolbar({ room, onLeave }) {
       <button data-testid="room-code-copy" onClick={copy} className="rs-mini-btn ml-auto">
         {t("room.code")} <span className="text-[#ff9a1f] tracking-[0.2em]" data-testid="room-code">{room.code}</span> <Copy size={11} />
       </button>
-      <button data-testid="lang-toggle-room" onClick={() => setLang(lang === "fr" ? "en" : "fr")} className="rs-icon-btn font-title text-[11px] w-8">{lang === "fr" ? "EN" : "FR"}</button>
+      <a href={`mailto:${CONTACT_EMAIL}`} data-testid="room-contact" className="rs-icon-btn" title={t("nav.contact")}><Mail size={15} /></a>
+      <button data-testid="lang-toggle-room" onClick={toggleLang} className="rs-icon-btn font-title text-[11px] w-8">{lang.toUpperCase()}</button>
     </div>
   );
 }

@@ -673,7 +673,7 @@ function drawEffects(ctx, fx, cell, now) {
     const fxp = b.from[0] * cell + cell / 2, fyp = b.from[1] * cell + cell / 2;
     const txp = b.to[0] * cell + cell / 2, typ = b.to[1] * cell + cell / 2;
     if (b.type === "explode") return explosion(ctx, fxp, fyp, cell * 1.3, p, b.parts, cell, "#ff5a1f");
-    if (b.type === "blast") return explosion(ctx, fxp, fyp, cell * 0.95, p, b.parts, cell, "#f97316");
+    if (b.type === "blast") return blueBlast(ctx, fxp, fyp, p, cell);
     if (b.type === "bomb") {
       const tp = Math.min(1, p / 0.3);
       const bx = lerp(fxp, txp, tp), by = lerp(fyp, typ, tp) - Math.sin(tp * Math.PI) * cell * 0.6;
@@ -715,6 +715,32 @@ function beamLine(ctx, fx, fy, tx, ty, p, col, cell, mult) {
     ctx.beginPath(); ctx.arc(fx, fy, cell * 0.16 * mf + cell * 0.05, 0, 6.283); ctx.fill();
   }
 }
+// blue shockwave covering the 8 surrounding cells (diagonals included)
+function blueBlast(ctx, cx, cy, p, cell) {
+  const a = p < 0.15 ? p / 0.15 : Math.max(0, 1 - (p - 0.15) / 0.85);
+  const grow = Math.min(1, p / 0.3);
+  ctx.save();
+  ctx.shadowColor = "#3b9cff"; ctx.shadowBlur = cell * 0.6;
+  for (let ox = -1; ox <= 1; ox++) {
+    for (let oy = -1; oy <= 1; oy++) {
+      if (!ox && !oy) continue;
+      const x = cx + ox * cell * grow, y = cy + oy * cell * grow;
+      ctx.fillStyle = `rgba(59,156,255,${0.32 * a})`;
+      roundRect(ctx, x - cell * 0.46, y - cell * 0.46, cell * 0.92, cell * 0.92, cell * 0.14); ctx.fill();
+      ctx.strokeStyle = `rgba(147,206,255,${0.85 * a})`; ctx.lineWidth = Math.max(1.5, cell * 0.04);
+      ctx.stroke();
+    }
+  }
+  const R = cell * (0.4 + 1.15 * grow);
+  const g = ctx.createRadialGradient(cx, cy, R * 0.2, cx, cy, R);
+  g.addColorStop(0, `rgba(224,242,254,${0.75 * a})`); g.addColorStop(0.55, `rgba(59,156,255,${0.4 * a})`); g.addColorStop(1, "rgba(59,156,255,0)");
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.283); ctx.fill();
+  ctx.strokeStyle = `rgba(125,200,255,${a})`; ctx.lineWidth = cell * 0.08 * (1 - p * 0.6);
+  ctx.beginPath(); ctx.arc(cx, cy, cell * 1.5 * grow + cell * 0.1, 0, 6.283); ctx.stroke();
+  ctx.restore();
+}
+
 function explosion(ctx, cx, cy, maxR, p, parts, cell, col) {
   if (p < 0 || p > 1) return;
   const alpha = 1 - p;

@@ -2,10 +2,11 @@ import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useI18n } from "../i18n";
 import { useAuth } from "../context/AuthContext";
-import { LogOut, Globe } from "lucide-react";
+import { LogOut, Globe, Mail } from "lucide-react";
+import { CONTACT_EMAIL } from "../i18n_extra";
 
 export default function Header() {
-  const { t, lang, setLang } = useI18n();
+  const { t, lang, toggleLang } = useI18n();
   const { user, logout } = useAuth();
   const nav = useNavigate();
   const loc = useLocation();
@@ -43,9 +44,16 @@ export default function Header() {
           ))}
         </nav>
         <div className="ml-auto flex items-center gap-3">
+          <a
+            href={`mailto:${CONTACT_EMAIL}`}
+            data-testid="nav-contact"
+            className="flex items-center gap-1 text-xs uppercase tracking-wider text-muted-foreground hover:text-white"
+          >
+            <Mail size={14} /> <span className="hidden sm:inline">{t("nav.contact")}</span>
+          </a>
           <button
             data-testid="lang-toggle"
-            onClick={() => setLang(lang === "fr" ? "en" : "fr")}
+            onClick={toggleLang}
             className="flex items-center gap-1 text-xs font-mono-rs text-muted-foreground hover:text-white"
           >
             <Globe size={14} /> {lang.toUpperCase()}

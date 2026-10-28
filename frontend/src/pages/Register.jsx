@@ -1,33 +1,33 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import api, { formatApiError } from "../lib/api";
-import { useAuth } from "../context/AuthContext";
 import { useI18n } from "../i18n";
 import { AuthShell, Field } from "./Login";
+import { CheckEmail } from "./ForgotPassword";
 
 export default function Register() {
-  const { t } = useI18n();
-  const { login } = useAuth();
-  const nav = useNavigate();
+  const { t, lang } = useI18n();
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pending, setPending] = useState(null);
 
   const submit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const { data } = await api.post("/auth/register", { email, username, password });
-      login(data.token, data.user);
-      nav("/home");
+      const { data } = await api.post("/auth/register", { email, username, password, lang });
+      setPending(data.email);
     } catch (err) {
       toast.error(formatApiError(err.response?.data?.detail) || err.message);
     } finally {
       setLoading(false);
     }
   };
+
+  if (pending) return <CheckEmail email={pending} />;
 
   return (
     <AuthShell

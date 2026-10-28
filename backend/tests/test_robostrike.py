@@ -27,14 +27,28 @@ def admin_token(session):
     return r.json()["token"]
 
 
+def _last_link(kind):
+    import glob
+    import re
+    links = []
+    for f in glob.glob("/var/log/supervisor/backend.*.log"):
+        links += re.findall(rf"{kind}\?token=([\w-]+)", open(f).read())
+    return links[-1]
+
+
 @pytest.fixture(scope="session")
 def new_user(session):
     email = f"test_{uuid.uuid4().hex[:8]}@robostrike.com"
     r = session.post(f"{API}/auth/register",
                      json={"email": email, "password": "pwd12345", "username": "Tester"})
     assert r.status_code == 200, r.text
-    data = r.json()
-    assert "token" in data and "user" in data
+    assert r.json() == {"pending": True, "email": email}
+    blocked = session.post(f"{API}/auth/login", json={"email": email, "password": "pwd12345"})
+    assert blocked.status_code == 403 and blocked.json()["detail"] == "email_not_verified"
+    # without RESEND_API_KEY the confirmation link is written to the backend log
+    v = session.post(f"{API}/auth/verify-email", json={"token": _last_link("verify-email")})
+    assert v.status_code == 200, v.text
+    data = v.json()
     return {"email": email, "password": "pwd12345", "token": data["token"], "user": data["user"]}
 
 
@@ -222,6 +236,17 @@ class TestEngineWeapons:
         c = next(r for r in res["robots"] if r["id"] == "C")
         assert b["hp"] == 4
         assert c["hp"] == 4
+
+    def test_blast_hits_diagonals(self, session):
+        robots = [
+            _robot("A", 7, 1, 1, ["blast"]),
+            _robot("B", 8, 2, 1, []),  # south-east diagonal
+            _robot("C", 6, 0, 1, []),  # north-west diagonal
+            _robot("D", 7, 3, 1, []),  # 2 cells away: untouched
+        ]
+        res = _resolve(session, "arena", robots)
+        hp = {r["id"]: r["hp"] for r in res["robots"]}
+        assert hp["B"] == 4 and hp["C"] == 4 and hp["D"] == 5
 
     def test_bomb_damage(self, session):
         robots = [

@@ -6,31 +6,46 @@ import { useAuth } from "../context/AuthContext";
 import { useI18n } from "../i18n";
 
 export default function Login() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { login } = useAuth();
   const nav = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [unverified, setUnverified] = useState(false);
 
   const submit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setUnverified(false);
     try {
       const { data } = await api.post("/auth/login", { email, password });
       login(data.token, data.user);
       nav("/home");
     } catch (err) {
-      toast.error(formatApiError(err.response?.data?.detail) || err.message);
+      const d = err.response?.data?.detail;
+      if (d === "email_not_verified") setUnverified(true);
+      else toast.error(formatApiError(d) || err.message);
     } finally {
       setLoading(false);
     }
+  };
+  const resend = async () => {
+    await api.post("/auth/resend-verification", { email, lang });
+    toast.success(t("auth.resent"));
   };
 
   return <AuthShell title={t("auth.login")} onSubmit={submit} loading={loading}
     cta={t("auth.loginCta")} alt={<Link to="/register" className="text-[#8b5cf6] hover:underline" data-testid="to-register">{t("auth.toRegister")}</Link>}>
     <Field testid="login-email" label={t("auth.email")} type="email" value={email} onChange={setEmail} />
     <Field testid="login-password" label={t("auth.password")} type="password" value={password} onChange={setPassword} />
+    <Link to="/forgot-password" className="block text-xs text-right text-muted-foreground hover:text-white" data-testid="to-forgot">{t("auth.forgot")}</Link>
+    {unverified && (
+      <div className="text-xs rounded-sm border border-[#f97316]/50 bg-[#f97316]/10 p-2 space-y-1" data-testid="unverified-notice">
+        <p>{t("auth.notVerified")}</p>
+        <button type="button" onClick={resend} className="text-[#f97316] hover:underline" data-testid="login-resend">{t("auth.resend")}</button>
+      </div>
+    )}
   </AuthShell>;
 }
 

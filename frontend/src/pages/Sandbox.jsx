@@ -9,13 +9,14 @@ import ProgrammingPanel from "../components/game/ProgrammingPanel";
 import RobotHud from "../components/game/RobotHud";
 import { BoardShell, PlaybackControls, EventLog, phaseText } from "../components/game/BoardShell";
 import { useReplay } from "../lib/useReplay";
-import { Play, RefreshCw, Swords, Trophy, ArrowLeft } from "lucide-react";
+import { Play, RefreshCw, Swords, Trophy, ArrowLeft, Mail } from "lucide-react";
+import { CONTACT_EMAIL } from "../i18n_extra";
 
 const SLOTS = 6;
 const emptyProg = () => Array(SLOTS).fill(null);
 
 export default function Sandbox() {
-  const { t, lang, setLang } = useI18n();
+  const { t, lang, toggleLang } = useI18n();
   const navigate = useNavigate();
   const [boards, setBoards] = useState([]);
   const [boardId, setBoardId] = useState("arena");
@@ -104,7 +105,8 @@ export default function Sandbox() {
             {[2, 3, 4].map((n) => (<option key={n} value={n}>{n} {t("sandbox.robots")}</option>))}
           </select>
           <button data-testid="sandbox-reset" onClick={() => startSandbox(boardId, numRobots)} className="rs-icon-btn" title={t("sandbox.reset")}><RefreshCw size={15} /></button>
-          <button data-testid="lang-toggle-game" onClick={() => setLang(lang === "fr" ? "en" : "fr")} className="rs-icon-btn font-title text-[11px] w-8">{lang === "fr" ? "EN" : "FR"}</button>
+          <a href={`mailto:${CONTACT_EMAIL}`} data-testid="game-contact" className="rs-icon-btn" title={t("nav.contact")}><Mail size={15} /></a>
+          <button data-testid="lang-toggle-game" onClick={toggleLang} className="rs-icon-btn font-title text-[11px] w-8">{lang.toUpperCase()}</button>
         </div>
       </div>
 

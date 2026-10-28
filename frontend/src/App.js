@@ -13,6 +13,9 @@ import Lobby from "./pages/Lobby";
 import Profile from "./pages/Profile";
 import Leaderboard from "./pages/Leaderboard";
 import Room from "./pages/Room";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword, { VerifyEmail } from "./pages/ResetPassword";
+import PageMeta from "./components/PageMeta";
 
 function Protected({ children }) {
   const { user, loading } = useAuth();
@@ -29,11 +32,15 @@ function Protected({ children }) {
 function Shell() {
   return (
     <>
+      <PageMeta />
       <Header />
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/home" element={<Protected><Home /></Protected>} />
         <Route path="/sandbox" element={<Protected><Sandbox /></Protected>} />
         <Route path="/lobby" element={<Protected><Lobby /></Protected>} />

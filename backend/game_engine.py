@@ -168,16 +168,18 @@ def _fire_line(board, ws, robots, shooter, dmg, rng, beams, btype):
 
 
 def _fire_blast(board, robots, shooter, dmg, beams):
+    """Blue shockwave hitting the 8 surrounding cells (diagonals included)."""
     out = []
     beams.append({"type": "blast", "from": [shooter["x"], shooter["y"]],
                   "to": [shooter["x"], shooter["y"]], "color": shooter["color"], "by": shooter["id"]})
-    for d in range(4):
-        tx, ty = shooter["x"] + DX[d], shooter["y"] + DY[d]
-        if not _in_bounds(board, tx, ty):
-            continue
-        hit = _robot_at(robots, tx, ty, exclude=shooter)
-        if hit is not None:
-            out.append((hit, dmg))
+    for ox in (-1, 0, 1):
+        for oy in (-1, 0, 1):
+            tx, ty = shooter["x"] + ox, shooter["y"] + oy
+            if (ox == 0 and oy == 0) or not _in_bounds(board, tx, ty):
+                continue
+            hit = _robot_at(robots, tx, ty, exclude=shooter)
+            if hit is not None:
+                out.append((hit, dmg))
     return out
 
 

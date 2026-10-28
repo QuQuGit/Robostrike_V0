@@ -2,10 +2,11 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useI18n } from "../i18n";
 import { useAuth } from "../context/AuthContext";
-import { Cpu, Footprints, Crosshair, Globe } from "lucide-react";
+import { Cpu, Footprints, Crosshair, Globe, Mail, Info } from "lucide-react";
+import { CONTACT_EMAIL } from "../i18n_extra";
 
 export default function Landing() {
-  const { t, lang, setLang } = useI18n();
+  const { t, lang, toggleLang } = useI18n();
   const { user } = useAuth();
 
   const feats = [
@@ -27,10 +28,13 @@ export default function Landing() {
           WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,0.9), transparent 75%)",
         }}
       />
-      <div className="absolute top-5 right-5 z-10">
+      <div className="absolute top-5 right-5 z-10 flex items-center gap-4">
+        <a href={`mailto:${CONTACT_EMAIL}`} data-testid="landing-contact" className="flex items-center gap-1 text-xs uppercase tracking-wider text-muted-foreground hover:text-white">
+          <Mail size={14} /> {t("nav.contact")}
+        </a>
         <button
           data-testid="landing-lang"
-          onClick={() => setLang(lang === "fr" ? "en" : "fr")}
+          onClick={toggleLang}
           className="flex items-center gap-1 text-xs font-mono-rs text-muted-foreground hover:text-white"
         >
           <Globe size={14} /> {lang.toUpperCase()}
@@ -85,6 +89,18 @@ export default function Landing() {
             </div>
           ))}
         </div>
+
+        <section className="rs-panel rounded-sm p-5 mt-10 flex gap-4 items-start" data-testid="landing-disclaimer">
+          <Info className="text-[#8b5cf6] shrink-0 mt-0.5" size={20} />
+          <div className="space-y-2 text-sm text-muted-foreground">
+            <h2 className="font-display text-base text-white">{t("landing.disclaimerTitle")}</h2>
+            <p>{t("landing.disclaimer")}</p>
+            <p>
+              {t("landing.contact")}{" "}
+              <a href={`mailto:${CONTACT_EMAIL}`} className="text-[#f97316] hover:underline" data-testid="disclaimer-email">{CONTACT_EMAIL}</a>
+            </p>
+          </div>
+        </section>
       </div>
     </div>
   );

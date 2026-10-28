@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
+import { ES, EXTRA } from "./i18n_extra";
 
 const DICT = {
   fr: {
@@ -206,15 +207,27 @@ const DICT = {
     "phase.respawn": "Destroyed robots return", "ev.eliminated": "{robot} is eliminated",
   },
 };
+Object.assign(DICT.fr, EXTRA.fr);
+Object.assign(DICT.en, EXTRA.en);
+DICT.es = { ...ES, ...EXTRA.es };
+
+export const LANGS = ["fr", "en", "es"];
 
 const I18nCtx = createContext(null);
 
 export function I18nProvider({ children }) {
-  const [lang, setLang] = useState(localStorage.getItem("rs_lang") || "fr");
+  const [lang, setLang] = useState(() => {
+    const saved = localStorage.getItem("rs_lang");
+    if (LANGS.includes(saved)) return saved;
+    const nav = (navigator.language || "fr").slice(0, 2);
+    return LANGS.includes(nav) ? nav : "fr";
+  });
+  useEffect(() => { document.documentElement.lang = lang; }, [lang]);
   const change = (l) => {
     localStorage.setItem("rs_lang", l);
     setLang(l);
   };
+  const toggleLang = () => change(LANGS[(LANGS.indexOf(lang) + 1) % LANGS.length]);
   const t = useCallback(
     (key, vars) => {
       let s = DICT[lang][key] ?? DICT.fr[key] ?? key;
@@ -223,7 +236,7 @@ export function I18nProvider({ children }) {
     },
     [lang]
   );
-  return <I18nCtx.Provider value={{ lang, setLang: change, t }}>{children}</I18nCtx.Provider>;
+  return <I18nCtx.Provider value={{ lang, setLang: change, toggleLang, t }}>{children}</I18nCtx.Provider>;
 }
 
 export const useI18n = () => useContext(I18nCtx);

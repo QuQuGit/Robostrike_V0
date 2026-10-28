@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /sandbox
+Disallow: /room/
+Disallow: /verify-email
+Disallow: /reset-password
+
+Sitemap: https://robostrike.app/sitemap.xml
