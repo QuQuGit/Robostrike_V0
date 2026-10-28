@@ -111,8 +111,9 @@ class TestSandboxNew:
 
 
 # ---------- engine ----------
-def _robot(rid, x, y, d, program, hp=5):
+def _robot(rid, x, y, d, program, hp=5, items=None):
     return {
+        "items": items or [],
         "id": rid, "name": rid, "color": "#ef4444",
         "x": x, "y": y, "dir": d, "hp": hp, "max_hp": 5, "lives": 3,
         "alive": True, "eliminated": False,
@@ -138,20 +139,32 @@ class TestEngineMovement:
 
     def test_turn_left_right_uturn(self, session):
         # Use (6,1) to avoid board laser columns (x=4 and x=5) on arena
-        robots = [_robot("A", 6, 1, 0, ["left", "right", "right", "uturn", None, None])]
+        robots = [_robot("A", 6, 1, 0, ["left", "right", "right", "right", None, None])]
         res = _resolve(session, "arena", robots)
-        # 0 -> left=3 -> right=0 -> right=1 -> uturn=3
-        assert res["robots"][0]["dir"] == 3
+        # 0 -> left=3 -> right=0 -> right=1 -> right=2
+        assert res["robots"][0]["dir"] == 2
 
     def test_turbo_moves_two(self, session):
-        robots = [_robot("A", 5, 1, 1, ["turbo"])]
+        robots = [_robot("A", 5, 1, 1, ["turbo", "forward"])]
         res = _resolve(session, "arena", robots)
         final = res["robots"][0]
         assert (final["x"], final["y"]) == (7, 1)
 
+    def test_boost_stacks_and_strafes(self, session):
+        # 2 boosts + right = move 3 cells to the right of facing (north -> east), no rotation
+        robots = [_robot("A", 5, 1, 0, ["turbo", "turbo", "right"])]
+        res = _resolve(session, "arena", robots)
+        final = res["robots"][0]
+        assert (final["x"], final["y"], final["dir"]) == (8, 1, 0)
+
+    def test_weapon_after_boost_is_noop(self, session):
+        robots = [_robot("A", 1, 1, 1, ["turbo", "laser"]), _robot("B", 3, 1, 1, [])]
+        res = _resolve(session, "arena", robots)
+        assert next(r for r in res["robots"] if r["id"] == "B")["hp"] == 5
+
     def test_turbo_blocked_by_edge(self, session):
         # arena width=10. Place at x=8 facing east -> can only move to 9, blocked after
-        robots = [_robot("A", 8, 1, 1, ["turbo"])]
+        robots = [_robot("A", 8, 1, 1, ["turbo", "forward"])]
         res = _resolve(session, "arena", robots)
         final = res["robots"][0]
         assert (final["x"], final["y"]) == (9, 1)
@@ -190,7 +203,7 @@ class TestEngineWeapons:
 
     def test_double_laser_damage(self, session):
         robots = [
-            _robot("A", 1, 1, 1, ["double_laser"]),
+            _robot("A", 1, 1, 1, ["double_laser"], items=["double_laser"]),
             _robot("B", 3, 1, 1, []),
         ]
         res = _resolve(session, "arena", robots)
@@ -200,9 +213,9 @@ class TestEngineWeapons:
     def test_blast_hits_adjacent(self, session):
         # A at (5,2) blast -> hits adjacent N,E,S,W
         robots = [
-            _robot("A", 5, 2, 1, ["blast"]),
-            _robot("B", 6, 2, 1, []),  # east adj
-            _robot("C", 5, 1, 1, []),  # north adj
+            _robot("A", 7, 1, 1, ["blast"]),
+            _robot("B", 8, 1, 1, []),  # east adj
+            _robot("C", 7, 0, 1, []),  # north adj
         ]
         res = _resolve(session, "arena", robots)
         b = next(r for r in res["robots"] if r["id"] == "B")
@@ -212,7 +225,7 @@ class TestEngineWeapons:
 
     def test_bomb_damage(self, session):
         robots = [
-            _robot("A", 1, 1, 1, ["bomb"]),
+            _robot("A", 1, 1, 1, ["bomb"], items=["bomb"]),
             _robot("B", 3, 1, 1, []),
         ]
         res = _resolve(session, "arena", robots)
@@ -223,7 +236,7 @@ class TestEngineWeapons:
         # Both play simultaneously - weapons use start-of-slot shields
         robots = [
             _robot("A", 1, 1, 1, ["laser"]),
-            _robot("B", 4, 1, 1, ["shield"]),
+            _robot("B", 3, 1, 1, ["shield"], items=["shield"]),
         ]
         res = _resolve(session, "arena", robots)
         b = next(r for r in res["robots"] if r["id"] == "B")
@@ -246,8 +259,35 @@ class TestEngineHolesRespawn:
         # Simpler: give robot 1 hp and shoot it from close range repeatedly? Only self can't.
         # Instead: fall into hole thrice. Place at (1,3), do forward (fall), respawn at spawn=(1,3) facing east again, forward again, ...
         robots = [_robot("A", 1, 3, 1, ["forward"] * 6)]
-        res = _resolve(session, "arena", robots)
-        a = res["robots"][0]
+        for _ in range(3):
+            res = _resolve(session, "arena", robots)
+            a = res["robots"][0]
+            robots = [{**a, "program": ["forward"] * 6}]
         assert a["eliminated"] is True
         assert a["lives"] <= 0
         assert res.get("game_over") is False  # only one robot total, so not game over
+
+
+class TestPickupsAndDeath:
+    def test_item_card_requires_inventory(self, session):
+        robots = [_robot("A", 1, 1, 1, ["bomb"]), _robot("B", 3, 1, 1, [])]
+        res = _resolve(session, "arena", robots)
+        assert next(r for r in res["robots"] if r["id"] == "B")["hp"] == 5
+
+    def test_pickup_bomb_and_life(self, session):
+        # arena: bomb pickup at (2,5), life at (5,3)
+        robots = [_robot("A", 1, 5, 1, ["forward"]), _robot("B", 6, 3, 3, ["forward"], hp=2)]
+        res = _resolve(session, "arena", robots)
+        a, b = res["robots"]
+        assert a["items"] == ["bomb"]
+        assert b["hp"] == 5
+        assert "p1" in res["frames"][-1]["taken"]
+
+    def test_dead_robot_waits_until_end_of_turn(self, session):
+        robots = [_robot("A", 1, 3, 1, ["forward", "forward", "forward"])]
+        res = _resolve(session, "arena", robots)
+        mid = res["frames"][5]["robots"][0]
+        assert mid["dead"] is True and mid["alive"] is False
+        assert res["frames"][-1]["phase"] == "respawn"
+        a = res["robots"][0]
+        assert a["lives"] == 2 and a["alive"] and a["invuln"]

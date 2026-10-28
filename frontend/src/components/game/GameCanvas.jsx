@@ -44,7 +44,7 @@ const ROBOT_SPRITE = {
 };
 ["floor.jpg", "pit.jpg", ...Object.values(ROBOT_SPRITE).map((s) => s[0])].forEach(sprite);
 
-export default function GameCanvas({ board, robots, beams, plans = [], activeId }) {
+export default function GameCanvas({ board, robots, beams, plans = [], activeId, taken = [] }) {
   const canvasRef = useRef(null);
   const wrapRef = useRef(null);
   const dispRef = useRef({});
@@ -52,7 +52,7 @@ export default function GameCanvas({ board, robots, beams, plans = [], activeId 
   const staticRef = useRef({ key: "", cv: null });
   const [availW, setAvailW] = useState(0);
   const dataRef = useRef({});
-  dataRef.current = { board, robots, plans, activeId, availW };
+  dataRef.current = { board, robots, plans, activeId, availW, taken };
 
   useEffect(() => {
     const ro = new ResizeObserver(([e]) => setAvailW(Math.floor(e.contentRect.width)));
@@ -63,11 +63,12 @@ export default function GameCanvas({ board, robots, beams, plans = [], activeId 
   useEffect(() => {
     const list = (beams || []).map((b) => ({
       ...b,
-      parts: b.type === "bomb" || b.type === "blast"
+      parts: b.type === "bomb" || b.type === "blast" || b.type === "explode"
         ? Array.from({ length: 18 }, () => ({ ang: Math.random() * 6.283, spd: 0.5 + Math.random(), sz: 1.5 + Math.random() * 2.5 }))
         : null,
     }));
-    fxRef.current = { t0: performance.now(), list };
+    const recoil = Object.fromEntries(list.filter((b) => b.by).map((b) => [b.by, b.type]));
+    fxRef.current = { t0: performance.now(), list, recoil };
   }, [beams]);
 
   useEffect(() => {
@@ -76,10 +77,10 @@ export default function GameCanvas({ board, robots, beams, plans = [], activeId 
     const draw = () => {
       raf = requestAnimationFrame(draw);
       const now = performance.now();
-      const { board, robots, plans, activeId, availW } = dataRef.current;
+      const { board, robots, plans, activeId, availW, taken } = dataRef.current;
       const canvas = canvasRef.current;
       if (!board || !canvas || !availW) return;
-      const maxH = window.innerHeight * 0.62;
+      const maxH = window.innerWidth >= 1024 ? window.innerHeight - 190 : window.innerHeight * 0.44;
       const cell = Math.max(18, Math.floor(Math.min(availW / (board.width + 1.1), maxH / (board.height + 1.1), 84)));
       const FR = Math.round(cell * 0.55);
       const W = cell * board.width + FR * 2, H = cell * board.height + FR * 2;
@@ -95,10 +96,12 @@ export default function GameCanvas({ board, robots, beams, plans = [], activeId 
       ctx.save();
       ctx.translate(FR, FR);
       drawConveyors(ctx, board, cell, now);
+      drawRotators(ctx, board, cell, now);
+      drawPickups(ctx, board, cell, now, taken);
       drawBoardLasers(ctx, board, robots, cell, now);
       drawWalls(ctx, board, cell);
       plans.forEach((p) => drawPlan(ctx, p, cell, now, p.id === activeId));
-      robots.forEach((r) => drawRobot(ctx, r, dispRef.current, cell, now, r.id === activeId));
+      robots.forEach((r) => drawRobot(ctx, r, dispRef.current, cell, now, r.id === activeId, fxRef.current));
       drawEffects(ctx, fxRef.current, cell, now);
       ctx.restore();
     };
@@ -212,73 +215,182 @@ function drawNeon(ctx, W, H, FR, now) {
   });
 }
 
-/* ---------- conveyors: continuous purple tubes ---------- */
-function convGeom(board, c, cell) {
+/* ---------- conveyors: full-cell belts with rails & moving slats ---------- */
+function convInfo(board, c) {
   const map = board._convMap || (board._convMap = Object.fromEntries((board.conveyors || []).map((k) => [`${k.x},${k.y}`, k])));
   const [dx, dy] = VEC[c.dir];
-  const cx = c.x * cell + cell / 2, cy = c.y * cell + cell / 2;
   const nxt = map[`${c.x + dx},${c.y + dy}`];
   const outOpen = !nxt || (nxt.dir + 2) % 4 === c.dir;
   const ins = [0, 1, 2, 3].filter((s) => {
-    const [sx, sy] = VEC[s];
-    const n = map[`${c.x + sx},${c.y + sy}`];
+    const n = map[`${c.x + VEC[s][0]},${c.y + VEC[s][1]}`];
     return n && n.x + VEC[n.dir][0] === c.x && n.y + VEC[n.dir][1] === c.y;
   });
   const back = (c.dir + 2) % 4;
   const inSide = ins.includes(back) ? back : ins.length ? ins[0] : back;
-  const inOpen = !ins.length;
-  const E = [cx + VEC[inSide][0] * cell * (inOpen ? 0.1 : 0.5), cy + VEC[inSide][1] * cell * (inOpen ? 0.1 : 0.5)];
-  const X = [cx + dx * cell * (outOpen ? 0.1 : 0.5), cy + dy * cell * (outOpen ? 0.1 : 0.5)];
-  return { E, C: [cx, cy], X, inOpen, outOpen };
+  return { rel: (inSide - c.dir + 4) % 4, inOpen: !ins.length, outOpen };
 }
-const qpt = (g, t) => [
-  (1 - t) ** 2 * g.E[0] + 2 * (1 - t) * t * g.C[0] + t * t * g.X[0],
-  (1 - t) ** 2 * g.E[1] + 2 * (1 - t) * t * g.C[1] + t * t * g.X[1],
-];
-const qtan = (g, t) => Math.atan2(
-  2 * (1 - t) * (g.C[1] - g.E[1]) + 2 * t * (g.X[1] - g.C[1]),
-  2 * (1 - t) * (g.C[0] - g.E[0]) + 2 * t * (g.X[0] - g.C[0])
-);
-
+function rail(ctx, x, y, w, h, vertical) {
+  const g = vertical ? ctx.createLinearGradient(x, 0, x + w, 0) : ctx.createLinearGradient(0, y, 0, y + h);
+  g.addColorStop(0, "#2b2d31"); g.addColorStop(0.45, "#a9adb4"); g.addColorStop(1, "#3a3c41");
+  ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
+  ctx.strokeStyle = "rgba(0,0,0,0.7)"; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+}
+function roller(ctx, h, t) {
+  const g = ctx.createLinearGradient(0, -h, 0, -h + t);
+  g.addColorStop(0, "#56595f"); g.addColorStop(0.5, "#d0d3d8"); g.addColorStop(1, "#45484d");
+  ctx.fillStyle = g; ctx.fillRect(-h, -h, h * 2, t);
+}
+function chevron(ctx, x, y, ang, sz, alpha) {
+  ctx.save();
+  ctx.translate(x, y); ctx.rotate(ang);
+  ctx.shadowColor = "#e879f9"; ctx.shadowBlur = sz * 1.4;
+  ctx.strokeStyle = rgba("#f5a8ff", alpha); ctx.lineWidth = sz * 0.5; ctx.lineJoin = "round"; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(-sz, -sz * 0.75); ctx.lineTo(0, sz * 0.25); ctx.lineTo(sz, -sz * 0.75); ctx.stroke();
+  ctx.restore();
+}
 function drawConveyors(ctx, board, cell, now) {
-  const geo = (board.conveyors || []).map((c) => convGeom(board, c, cell));
-  const flow = (now / 900) % 1;
-  const layers = [[0.8, "#120a1c"], [0.7, "#6d34a8"], [0.6, "#3b1d5e"]];
-  layers.forEach(([wf, col]) => {
-    geo.forEach((g) => {
-      ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = cell * wf; ctx.lineCap = "butt";
-      ctx.beginPath(); ctx.moveTo(...g.E); ctx.quadraticCurveTo(...g.C, ...g.X); ctx.stroke();
-      [[g.inOpen, g.E], [g.outOpen, g.X]].forEach(([open, p]) => {
-        if (open) { ctx.beginPath(); ctx.arc(p[0], p[1], cell * wf / 2, 0, 6.283); ctx.fill(); }
-      });
-    });
-  });
-  // tube highlight
-  geo.forEach((g) => {
-    ctx.strokeStyle = "rgba(216,180,254,0.18)"; ctx.lineWidth = cell * 0.05;
-    ctx.beginPath(); ctx.moveTo(...g.E); ctx.quadraticCurveTo(...g.C, ...g.X); ctx.stroke();
-  });
-  geo.forEach((g) => {
-    // moving belt ribs
-    ctx.strokeStyle = "rgba(147,92,214,0.75)"; ctx.lineWidth = Math.max(1, cell * 0.035);
-    for (let k = 0; k < 4; k++) {
-      const t = (k + flow) / 4;
-      const [px, py] = qpt(g, t), a = qtan(g, t) + Math.PI / 2;
-      const r = cell * 0.26;
-      ctx.beginPath(); ctx.moveTo(px - Math.cos(a) * r, py - Math.sin(a) * r); ctx.lineTo(px + Math.cos(a) * r, py + Math.sin(a) * r); ctx.stroke();
-    }
-    // magenta chevron
-    const t = (flow * 2) % 1;
-    const [px, py] = qpt(g, 0.15 + t * 0.7), a = qtan(g, 0.15 + t * 0.7);
-    const alpha = Math.sin(t * Math.PI);
+  const flow = (now / 1100) % 1, h = cell / 2, t = cell * 0.12;
+  (board.conveyors || []).forEach((c) => {
+    const { rel, inOpen, outOpen } = convInfo(board, c);
     ctx.save();
-    ctx.translate(px, py); ctx.rotate(a);
-    ctx.shadowColor = "#e879f9"; ctx.shadowBlur = cell * 0.25;
-    ctx.strokeStyle = rgba("#f0abfc", 0.35 + 0.65 * alpha); ctx.lineWidth = cell * 0.08; ctx.lineJoin = "round"; ctx.lineCap = "round";
-    ctx.beginPath(); ctx.moveTo(-cell * 0.08, -cell * 0.13); ctx.lineTo(cell * 0.07, 0); ctx.lineTo(-cell * 0.08, cell * 0.13); ctx.stroke();
+    ctx.translate(c.x * cell + h, c.y * cell + h);
+    ctx.rotate(ROT[c.dir]);
+    if (rel === 1) ctx.scale(-1, 1);
+    ctx.beginPath(); ctx.rect(-h, -h, cell, cell); ctx.clip();
+    // belt rubber
+    ctx.fillStyle = "#2a1640"; ctx.fillRect(-h, -h, cell, cell);
+    const N = 5;
+    if (rel === 2) {
+      for (let k = -1; k < N; k++) {
+        const y = h - ((k + flow) / N) * cell;
+        const sg = ctx.createLinearGradient(0, y - cell / N, 0, y);
+        sg.addColorStop(0, "#3d2160"); sg.addColorStop(0.75, "#6a3fa3"); sg.addColorStop(1, "#21102f");
+        ctx.fillStyle = sg; ctx.fillRect(-h + t, y - cell / N + 1, cell - 2 * t, cell / N - 1);
+      }
+      for (let k = 0; k < 2; k++) {
+        const f = (flow + k * 0.5) % 1;
+        chevron(ctx, 0, h - f * cell, Math.PI, cell * 0.11, Math.sin(f * Math.PI));
+      }
+      rail(ctx, -h, -h, t, cell, true); rail(ctx, h - t, -h, t, cell, true);
+      if (inOpen) rail(ctx, -h, h - t, cell, t, false);
+    } else {
+      // corner: enters from left edge, exits top edge, around the top-left inner corner
+      const cx = -h, cy = -h;
+      for (let k = -1; k < N; k++) {
+        const a0 = (Math.PI / 2) * (1 - (k + flow) / N), a1 = a0 - (Math.PI / 2) / N;
+        const sg = ctx.createLinearGradient(cx + Math.cos(a0) * cell, cy + Math.sin(a0) * cell, cx + Math.cos(a1) * cell, cy + Math.sin(a1) * cell);
+        sg.addColorStop(0, "#3d2160"); sg.addColorStop(0.75, "#6a3fa3"); sg.addColorStop(1, "#21102f");
+        ctx.fillStyle = sg;
+        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, cell * 1.5, a1, a0); ctx.closePath(); ctx.fill();
+      }
+      for (let k = 0; k < 2; k++) {
+        const f = (flow + k * 0.5) % 1, a = (Math.PI / 2) * (1 - f), r = cell * 0.5;
+        chevron(ctx, cx + Math.cos(a) * r, cy + Math.sin(a) * r, a, cell * 0.11, Math.sin(f * Math.PI));
+      }
+      rail(ctx, -h, h - t, cell, t, false); rail(ctx, h - t, -h, t, cell, true);
+      const pg = ctx.createRadialGradient(cx + 2, cy + 2, 0, cx, cy, t * 1.6);
+      pg.addColorStop(0, "#c9ccd2"); pg.addColorStop(1, "#3a3c41");
+      ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(cx, cy, t * 1.6, 0, Math.PI / 2); ctx.lineTo(cx, cy); ctx.fill();
+      if (inOpen) rail(ctx, -h, -h, t, cell, true);
+    }
+    if (outOpen) roller(ctx, h, t * 1.3);
+    // bolts on rails
+    ctx.fillStyle = "#1f2023";
+    [[-h + t / 2, -h * 0.6], [-h + t / 2, h * 0.6], [h - t / 2, -h * 0.6], [h - t / 2, h * 0.6]].forEach(([bx, by]) => {
+      if (rel !== 2 && bx < 0) return;
+      ctx.beginPath(); ctx.arc(bx, by, t * 0.22, 0, 6.283); ctx.fill();
+    });
     ctx.restore();
   });
-  ctx.lineCap = "butt";
+}
+
+/* ---------- turntables (rotate robot left/right) ---------- */
+function drawRotators(ctx, board, cell, now) {
+  (board.rotators || []).forEach((rt) => {
+    const cx = rt.x * cell + cell / 2, cy = rt.y * cell + cell / 2, R = cell * 0.44;
+    const col = rt.rot > 0 ? "#ff9a1f" : "#c14dff";
+    ctx.save();
+    ctx.translate(cx, cy);
+    // gear ring
+    ctx.fillStyle = "#26272b";
+    ctx.beginPath();
+    for (let i = 0; i < 24; i++) {
+      const a = (i / 24) * 6.283, rr = i % 2 ? R : R * 1.08;
+      ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+    }
+    ctx.closePath(); ctx.fill();
+    const g = ctx.createRadialGradient(-R * 0.3, -R * 0.3, 0, 0, 0, R);
+    g.addColorStop(0, "#9da1a8"); g.addColorStop(1, "#3c3e43");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, R * 0.9, 0, 6.283); ctx.fill();
+    ctx.strokeStyle = "#111"; ctx.lineWidth = 1.5; ctx.stroke();
+    // rotating arrows
+    ctx.rotate(rt.rot * now / 900);
+    ctx.shadowColor = col; ctx.shadowBlur = cell * 0.25;
+    ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = cell * 0.07; ctx.lineCap = "round";
+    [0, Math.PI].forEach((o) => {
+      ctx.beginPath(); ctx.arc(0, 0, R * 0.58, o + 0.25, o + 2.4); ctx.stroke();
+      const ea = rt.rot > 0 ? o + 2.4 : o + 0.25, sgn = rt.rot > 0 ? 1 : -1;
+      const ex = Math.cos(ea) * R * 0.58, ey = Math.sin(ea) * R * 0.58;
+      const tx = -Math.sin(ea) * sgn, ty = Math.cos(ea) * sgn;
+      ctx.beginPath();
+      ctx.moveTo(ex + tx * cell * 0.1, ey + ty * cell * 0.1);
+      ctx.lineTo(ex - ty * cell * 0.08, ey + tx * cell * 0.08);
+      ctx.lineTo(ex + ty * cell * 0.08, ey - tx * cell * 0.08);
+      ctx.closePath(); ctx.fill();
+    });
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "#1c1d20"; ctx.beginPath(); ctx.arc(0, 0, R * 0.16, 0, 6.283); ctx.fill();
+    ctx.restore();
+  });
+}
+
+/* ---------- pickups ---------- */
+function drawPickups(ctx, board, cell, now, taken) {
+  (board.pickups || []).forEach((p, i) => {
+    const off = taken.includes(p.id);
+    const cx = p.x * cell + cell / 2, cy = p.y * cell + cell / 2 + (off ? 0 : Math.sin(now / 380 + i) * cell * 0.04);
+    ctx.save();
+    if (off) { ctx.globalAlpha = 0.35; ctx.filter = "grayscale(1)"; }
+    // pad
+    ctx.fillStyle = "rgba(0,0,0,0.55)";
+    ctx.beginPath(); ctx.ellipse(p.x * cell + cell / 2, p.y * cell + cell * 0.78, cell * 0.26, cell * 0.08, 0, 0, 6.283); ctx.fill();
+    ctx.translate(cx, cy);
+    const s = cell * 0.3;
+    const glow = { bomb: "#ff7a00", double_laser: "#ffd400", shield: "#3b82f6", life: "#ef4444" }[p.type];
+    if (!off) { ctx.shadowColor = glow; ctx.shadowBlur = cell * (0.3 + 0.1 * Math.sin(now / 200)); }
+    ctx.lineJoin = "round"; ctx.strokeStyle = "#111"; ctx.lineWidth = Math.max(1.5, cell * 0.035);
+    if (p.type === "bomb") {
+      const g = ctx.createRadialGradient(-s * 0.35, -s * 0.35, 0, 0, 0, s);
+      g.addColorStop(0, "#6b7280"); g.addColorStop(1, "#0b0b0d");
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, s * 0.1, s * 0.85, 0, 6.283); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#8a8f96"; ctx.fillRect(-s * 0.2, -s * 0.85, s * 0.4, s * 0.25);
+      ctx.strokeStyle = "#c9a26b"; ctx.lineWidth = cell * 0.03;
+      ctx.beginPath(); ctx.moveTo(0, -s * 0.85); ctx.quadraticCurveTo(s * 0.4, -s * 1.2, s * 0.55, -s * 1.0); ctx.stroke();
+      if (!off) { ctx.fillStyle = Math.sin(now / 60) > 0 ? "#fff3b0" : "#ff9a1f"; ctx.beginPath(); ctx.arc(s * 0.58, -s * 1.02, s * 0.16, 0, 6.283); ctx.fill(); }
+    } else if (p.type === "double_laser") {
+      ctx.fillStyle = "#ffd400";
+      ctx.beginPath();
+      [[0.25, -1.1], [-0.55, 0.15], [-0.05, 0.15], [-0.3, 1.1], [0.55, -0.2], [0.05, -0.2]].forEach(([x, y], k) => (k ? ctx.lineTo(x * s, y * s) : ctx.moveTo(x * s, y * s)));
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    } else if (p.type === "shield") {
+      const g = ctx.createLinearGradient(0, -s, 0, s);
+      g.addColorStop(0, "#93c5fd"); g.addColorStop(1, "#1d4ed8");
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.moveTo(0, -s); ctx.lineTo(s * 0.85, -s * 0.6); ctx.quadraticCurveTo(s * 0.8, s * 0.6, 0, s * 1.05);
+      ctx.quadraticCurveTo(-s * 0.8, s * 0.6, -s * 0.85, -s * 0.6); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.shadowBlur = 0; ctx.strokeStyle = "rgba(255,255,255,0.7)"; ctx.lineWidth = cell * 0.025;
+      ctx.beginPath(); ctx.moveTo(0, -s * 0.6); ctx.lineTo(0, s * 0.6); ctx.stroke();
+    } else {
+      ctx.fillStyle = "#ef4444";
+      ctx.beginPath(); ctx.moveTo(0, s * 0.95);
+      ctx.bezierCurveTo(-s * 1.3, 0, -s * 0.7, -s * 1.1, 0, -s * 0.45);
+      ctx.bezierCurveTo(s * 0.7, -s * 1.1, s * 1.3, 0, 0, s * 0.95);
+      ctx.fill(); ctx.stroke();
+      ctx.shadowBlur = 0; ctx.fillStyle = "#fff";
+      ctx.fillRect(-s * 0.09, -s * 0.35, s * 0.18, s * 0.6); ctx.fillRect(-s * 0.3, -s * 0.14, s * 0.6, s * 0.18);
+    }
+    ctx.restore();
+  });
 }
 
 /* ---------- board lasers: emitter housing + live beam ---------- */
@@ -288,7 +400,7 @@ function blocked(board, x, y, d) {
     (wx === x && wy === y && wd === d) || (wx === x + dx && wy === y + dy && wd === (d + 2) % 4));
 }
 function drawBoardLasers(ctx, board, robots, cell, now) {
-  const occ = new Set(robots.filter((r) => !r.eliminated).map((r) => `${r.x},${r.y}`));
+  const occ = new Set(robots.filter((r) => r.alive !== false && !r.eliminated && !r.dead).map((r) => `${r.x},${r.y}`));
   (board.lasers || []).forEach((lz, i) => {
     const [dx, dy] = VEC[lz.dir];
     let x = lz.x, y = lz.y;
@@ -413,34 +525,68 @@ function brackets(ctx, x, y, s, col, alpha) {
     ctx.beginPath(); ctx.moveTo(px, py + sy * k); ctx.lineTo(px, py); ctx.lineTo(px + sx * k, py); ctx.stroke();
   });
 }
-function drawRobot(ctx, r, disp, cell, now, active) {
-  if (r.eliminated) { delete disp[r.id]; return; }
+function drawRobot(ctx, r, disp, cell, now, active, fx) {
+  if (r.eliminated || r.dead || r.alive === false) { delete disp[r.id]; return; }
   let d = disp[r.id];
-  if (!d) d = disp[r.id] = { x: r.x, y: r.y, ang: ROT[r.dir] };
-  d.x = lerp(d.x, r.x, 0.18); d.y = lerp(d.y, r.y, 0.18);
-  d.ang = lerpAngle(d.ang, ROT[r.dir], 0.2);
+  if (!d) d = disp[r.id] = { x: r.x, y: r.y, ang: ROT[r.dir], tread: 0, moving: 0 };
+  const ox = d.x, oy = d.y, oa = d.ang;
+  d.x = lerp(d.x, r.x, 0.16); d.y = lerp(d.y, r.y, 0.16);
+  d.ang = lerpAngle(d.ang, ROT[r.dir], 0.18);
+  // tread travel: forward component of the motion (+ rotation)
+  const fwd = (d.x - ox) * Math.sin(d.ang) - (d.y - oy) * Math.cos(d.ang);
+  const spin = d.ang - oa;
+  d.tread += fwd * cell;
+  d.spin = (d.spin || 0) + spin * cell * 0.35;
+  d.moving = Math.max(Math.abs(fwd) + Math.abs(d.x - ox) + Math.abs(d.y - oy) + Math.abs(spin) * 0.3 > 0.002 ? 1 : 0, d.moving * 0.9);
   const px = d.x * cell, py = d.y * cell, cx = px + cell / 2, cy = py + cell / 2;
 
-  // colored floor glow + brackets (mockup selection)
   ctx.fillStyle = rgba(r.color, active ? 0.22 : 0.12);
   ctx.fillRect(px + 2, py + 2, cell - 4, cell - 4);
   brackets(ctx, px + 3, py + 3, cell - 6, r.color, active ? 0.95 : 0.5);
 
+  // recoil when this robot fires in the current frame
+  let kick = 0, flash = 0;
+  const weapon = fx.recoil && fx.recoil[r.id];
+  if (weapon) {
+    const rp = (now - fx.t0) / 320;
+    if (rp < 1) { kick = Math.sin(rp * Math.PI) * cell * (weapon === "blast" ? 0.04 : 0.1); flash = 1 - rp; }
+  }
   const [file, filter] = ROBOT_SPRITE[r.color] || ROBOT_SPRITE["#ef4444"];
   const img = sprite(file);
-  const s = cell * 0.86;
+  const s = cell * 0.86 * (weapon === "blast" && flash ? 1 + flash * 0.08 : 1);
   ctx.save();
   if (r.invuln) ctx.globalAlpha = 0.55 + 0.45 * Math.abs(Math.sin(now / 120));
   ctx.translate(cx, cy); ctx.rotate(d.ang);
+  ctx.translate(0, kick);
+  ctx.save();
   ctx.shadowColor = "rgba(0,0,0,0.75)"; ctx.shadowBlur = cell * 0.16; ctx.shadowOffsetY = cell * 0.05;
   if (filter) ctx.filter = filter;
   if (img) ctx.drawImage(img, -s / 2, -s / 2, s, s);
   else { ctx.fillStyle = r.color; roundRect(ctx, -s / 2, -s / 2, s, s, cell * 0.12); ctx.fill(); }
   ctx.restore();
+  // rolling treads
+  if (d.moving > 0.05) {
+    const gap = s * 0.1;
+    [[-1, d.tread + d.spin], [1, d.tread - d.spin]].forEach(([side, off]) => {
+      ctx.save();
+      ctx.beginPath(); ctx.rect(side < 0 ? -s * 0.47 : s * 0.29, -s * 0.4, s * 0.18, s * 0.8); ctx.clip();
+      ctx.strokeStyle = `rgba(10,10,12,${0.55 * d.moving})`; ctx.lineWidth = Math.max(1.2, s * 0.035);
+      const o = ((off % gap) + gap) % gap;
+      for (let y = -s * 0.45 + o; y < s * 0.45; y += gap) {
+        ctx.beginPath(); ctx.moveTo(-s / 2, y); ctx.lineTo(s / 2, y); ctx.stroke();
+      }
+      ctx.restore();
+    });
+  }
+  if (flash && weapon !== "blast") {
+    ctx.shadowColor = "#ffb347"; ctx.shadowBlur = cell * 0.4;
+    ctx.fillStyle = rgba("#fff1c2", flash);
+    ctx.beginPath(); ctx.arc(0, -s * 0.52, cell * 0.12 * flash + 2, 0, 6.283); ctx.fill();
+  }
+  ctx.restore();
 
   if (r.shield || r.invuln) drawBubble(ctx, cx, cy, cell, now, r.invuln && !r.shield);
 
-  // hp pips
   const bw = cell * 0.7, bx = cx - bw / 2, by = py + cell - cell * 0.1;
   const seg = bw / r.max_hp;
   ctx.fillStyle = "rgba(0,0,0,0.75)";
@@ -449,7 +595,6 @@ function drawRobot(ctx, r, disp, cell, now, active) {
     ctx.fillStyle = i < r.hp ? (r.hp <= 2 ? "#ef4444" : "#ff9a1f") : "rgba(255,255,255,0.12)";
     ctx.fillRect(bx + i * seg + 0.5, by, seg - 1.5, cell * 0.09);
   }
-  // name tag
   ctx.font = `700 ${Math.max(8, cell * 0.16)}px 'Russo One', sans-serif`;
   const tw = ctx.measureText(r.name).width + 8;
   ctx.fillStyle = "rgba(0,0,0,0.7)";
@@ -483,6 +628,7 @@ function drawEffects(ctx, fx, cell, now) {
   fx.list.forEach((b) => {
     const fxp = b.from[0] * cell + cell / 2, fyp = b.from[1] * cell + cell / 2;
     const txp = b.to[0] * cell + cell / 2, typ = b.to[1] * cell + cell / 2;
+    if (b.type === "explode") return explosion(ctx, fxp, fyp, cell * 1.3, p, b.parts, cell, "#ff5a1f");
     if (b.type === "blast") return explosion(ctx, fxp, fyp, cell * 0.95, p, b.parts, cell, "#f97316");
     if (b.type === "bomb") {
       const tp = Math.min(1, p / 0.3);

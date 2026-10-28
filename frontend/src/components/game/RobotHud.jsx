@@ -1,5 +1,6 @@
 import React from "react";
 import { Heart, Shield } from "lucide-react";
+import { PICKUP_ICON } from "./cards";
 
 const THUMB = {
   "#ef4444": ["robot_red.png", ""], "#3b82f6": ["robot_blue.png", ""],
@@ -32,11 +33,11 @@ export default function RobotHud({ robots, programs, activeIdx, onSelect }) {
             key={r.id}
             data-testid={`robot-tab-${i}`}
             onClick={() => onSelect(i)}
-            className={`rs-steel rounded-md p-2 text-left flex items-center gap-2.5 transition-transform hover:-translate-y-0.5 ${r.eliminated ? "opacity-40" : ""}`}
+            className={`rs-steel rounded-md p-1.5 text-left flex items-center gap-2 transition-transform hover:-translate-y-0.5 ${r.eliminated || r.dead ? "opacity-40" : ""}`}
             style={active ? { borderColor: r.color, boxShadow: `0 0 0 1px ${r.color}, 0 0 18px ${r.color}66` } : undefined}
           >
-            <div className="rs-screen rounded w-11 h-11 sm:w-12 sm:h-12 shrink-0 grid place-items-center">
-              <img src={`/assets/${img}`} alt="" className="w-9 h-9 sm:w-10 sm:h-10 transition-transform duration-300"
+            <div className="rs-screen rounded w-10 h-10 shrink-0 grid place-items-center">
+              <img src={`/assets/${img}`} alt="" className="w-8 h-8 transition-transform duration-300"
                 style={{ transform: `rotate(${r.dir * 90}deg)`, filter: filter || undefined }} />
             </div>
             <div className="flex-1 min-w-0 space-y-1">
@@ -44,6 +45,13 @@ export default function RobotHud({ robots, programs, activeIdx, onSelect }) {
                 <span className="font-title text-sm" style={{ color: r.color }}>{r.name}</span>
                 {r.invuln && <Shield size={12} className="text-sky-400" />}
                 {r.eliminated && <span className="font-mono-rs text-[10px] text-red-500">OUT</span>}
+                {r.dead && <span className="font-mono-rs text-[10px] text-red-400" data-testid={`robot-dead-${i}`}>KO</span>}
+                <span className="flex gap-0.5" data-testid={`robot-items-${i}`}>
+                  {(r.items || []).map((it, k) => {
+                    const Ico = PICKUP_ICON[it];
+                    return <Ico key={k} size={11} className="text-[#ff9a1f]" />;
+                  })}
+                </span>
                 <span className="ml-auto flex gap-0.5" data-testid={`robot-lives-${i}`}>
                   {Array.from({ length: 3 }).map((_, k) => (
                     <Heart key={k} size={10} className={k < r.lives ? "fill-red-500 text-red-500" : "text-zinc-600"} />

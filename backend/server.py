@@ -119,6 +119,8 @@ class RobotState(BaseModel):
     alive: bool = True
     eliminated: bool = False
     spawn: dict
+    invuln: bool = False
+    items: List[str] = []
     program: List[Optional[str]] = []
 
 
@@ -201,6 +203,7 @@ def _spawn_robots(board, n):
             "hp": 5, "max_hp": 5, "lives": 3,
             "alive": True, "eliminated": False,
             "spawn": {"x": sp["x"], "y": sp["y"], "dir": sp["dir"]},
+            "items": [], "invuln": False,
             "program": [None] * SLOTS,
         })
     return robots

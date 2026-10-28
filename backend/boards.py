@@ -21,8 +21,8 @@ BOARDS = {
             {"x": 3, "y": 6, "dir": 3},
         ],
         "lasers": [
-            {"x": 0, "y": 0, "dir": 1, "damage": 1},
-            {"x": 10, "y": 8, "dir": 3, "damage": 1},
+            {"x": 0, "y": 1, "dir": 1, "damage": 1},
+            {"x": 10, "y": 7, "dir": 3, "damage": 1},
         ],
         "spawns": [
             {"x": 0, "y": 0, "dir": 1},
@@ -88,6 +88,38 @@ BOARDS = {
         ],
     },
 }
+
+EXTRAS = {
+    "foundry": {
+        "rotators": [{"x": 2, "y": 4, "rot": 1}, {"x": 8, "y": 4, "rot": -1}],
+        "pickups": [
+            {"id": "p1", "type": "bomb", "x": 5, "y": 3},
+            {"id": "p2", "type": "double_laser", "x": 5, "y": 5},
+            {"id": "p3", "type": "shield", "x": 1, "y": 4},
+            {"id": "p4", "type": "life", "x": 9, "y": 4},
+        ],
+    },
+    "cross": {
+        "rotators": [{"x": 3, "y": 3, "rot": 1}, {"x": 5, "y": 5, "rot": -1}],
+        "pickups": [
+            {"id": "p1", "type": "bomb", "x": 2, "y": 2},
+            {"id": "p2", "type": "double_laser", "x": 6, "y": 6},
+            {"id": "p3", "type": "shield", "x": 6, "y": 2},
+            {"id": "p4", "type": "life", "x": 2, "y": 6},
+        ],
+    },
+    "arena": {
+        "rotators": [{"x": 3, "y": 1, "rot": 1}, {"x": 6, "y": 6, "rot": -1}],
+        "pickups": [
+            {"id": "p1", "type": "bomb", "x": 2, "y": 5},
+            {"id": "p2", "type": "double_laser", "x": 7, "y": 2},
+            {"id": "p3", "type": "shield", "x": 4, "y": 4},
+            {"id": "p4", "type": "life", "x": 5, "y": 3},
+        ],
+    },
+}
+for _bid, _extra in EXTRAS.items():
+    BOARDS[_bid].update(_extra)
 
 ROBOT_COLORS = ["#ef4444", "#3b82f6", "#10b981", "#eab308", "#a855f7", "#ec4899"]
 

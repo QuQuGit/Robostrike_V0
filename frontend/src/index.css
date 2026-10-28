@@ -117,9 +117,9 @@ body {
 }
 .rs-title-plate {
   font-family: 'Russo One', sans-serif;
-  font-size: clamp(1.25rem, 3.2vw, 2.1rem);
+  font-size: clamp(0.95rem, 2vw, 1.5rem);
   letter-spacing: 0.06em;
-  padding: 0.3rem 2.2rem 0.4rem;
+  padding: 0.15rem 1.8rem 0.25rem;
   margin-top: -1px;
   background: linear-gradient(180deg, #55585e, #2b2d31);
   border: 1px solid #0b0b0d; border-top: none;
@@ -146,8 +146,8 @@ body {
 .rs-mini-btn:disabled { opacity: 0.4; }
 .rs-go-btn {
   display: inline-flex; align-items: center; gap: 0.5rem;
-  padding: 0.5rem 1.3rem; border-radius: 6px;
-  font-family: 'Russo One', sans-serif; text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.85rem;
+  padding: 0.35rem 1rem; border-radius: 6px;
+  font-family: 'Russo One', sans-serif; text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.75rem;
   color: #1a0c00; background: linear-gradient(180deg, #ffc061, #ff8a00 55%, #d9640a);
   border: 1px solid #5a2800;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), 0 0 18px rgba(255,138,0,0.55);
@@ -158,7 +158,7 @@ body {
 .rs-go-purple { color: #fff; background: linear-gradient(180deg, #c77dff, #8b2fe0 55%, #5b189e); border-color: #2c0a55; box-shadow: inset 0 1px 0 rgba(255,255,255,0.45), 0 0 18px rgba(170,70,255,0.55); }
 .rs-go-purple:hover { box-shadow: inset 0 1px 0 rgba(255,255,255,0.45), 0 0 28px rgba(170,70,255,0.8); }
 .rs-icon-btn {
-  padding: 0.45rem; border-radius: 6px; color: #e4e4e7;
+  padding: 0.35rem; border-radius: 6px; color: #e4e4e7;
   background: linear-gradient(180deg, #5d6066, #33353a); border: 1px solid #0b0b0d;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.25);
   transition: color 0.15s ease, transform 0.15s ease;
@@ -176,7 +176,7 @@ body {
 }
 .rs-tray-arrow:hover { color: #fff; }
 .rs-card {
-  width: 78px; height: 104px; border-radius: 9px; padding: 3px;
+  position: relative; width: 60px; height: 80px; border-radius: 8px; padding: 2px;
   display: flex; flex-direction: column;
   background: linear-gradient(180deg, color-mix(in srgb, var(--c) 85%, #000) 0%, color-mix(in srgb, var(--c) 45%, #000) 100%);
   border: 2px solid color-mix(in srgb, var(--c) 60%, #fff);
@@ -201,7 +201,7 @@ body {
 
 /* program slots */
 .rs-slot {
-  position: relative; aspect-ratio: 3 / 4; max-height: 104px; width: 100%; border-radius: 9px; display: grid; place-items: center;
+  position: relative; aspect-ratio: 3 / 4; max-height: 70px; width: 100%; border-radius: 9px; display: grid; place-items: center;
   background: #121216; border: 2px dashed rgba(255,255,255,0.14);
   transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
@@ -220,3 +220,19 @@ body {
 .rs-hp-seg { flex: 1; height: 9px; border-radius: 2px; background: rgba(255,255,255,0.08); }
 .rs-hp-on { background: linear-gradient(180deg, #ffd27a, #ff9a1f 60%, #d9640a); box-shadow: 0 0 6px rgba(255,154,31,0.7); }
 .rs-hp-low { background: linear-gradient(180deg, #ff8a8a, #ef4444); box-shadow: 0 0 6px rgba(239,68,68,0.7); }
+
+.rs-card-head { font-size: 9px !important; }
+.rs-card-item { border-style: double; border-width: 3px; }
+.rs-card-count {
+  position: absolute; top: -5px; right: -5px; min-width: 17px; height: 17px; padding: 0 4px;
+  border-radius: 9px; background: #ff9a1f; color: #1a0c00; font: 700 10px/17px 'JetBrains Mono', monospace;
+  box-shadow: 0 0 6px rgba(255,154,31,0.8); text-align: center;
+}
+.rs-card:disabled .rs-card-count { background: #52525b; color: #d4d4d8; box-shadow: none; }
+.rs-card:disabled { opacity: 0.32; filter: grayscale(0.85); }
+.rs-tray-sep { width: 2px; flex-shrink: 0; margin: 4px 2px; background: linear-gradient(#0000, #ff9a1f, #0000); }
+.rs-tray { padding-top: 6px !important; padding-right: 6px; }
+.rs-slot-mult {
+  position: absolute; bottom: 2px; right: 4px; font: 700 10px 'JetBrains Mono', monospace;
+  color: #fff; text-shadow: 0 0 6px var(--n);
+}
