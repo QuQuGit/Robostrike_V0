@@ -63,7 +63,7 @@ function RoomLobby({ room, boards, myId, send, chat }) {
   const me = room.players.find((p) => p.user_id === myId);
   const canStart = room.players.length >= 2 && room.players.every((p) => p.ready || p.user_id === room.host_id);
   return (
-    <div className="flex-1 max-w-4xl w-full mx-auto p-3 grid md:grid-cols-[1fr_300px] gap-3" data-testid="room-lobby">
+    <div className="flex-1 max-w-4xl w-full mx-auto p-3 grid md:grid-cols-[1fr_300px] gap-3 items-start" data-testid="room-lobby">
       <div className="rs-steel rs-bolts rounded-lg p-4 space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="font-title uppercase tracking-wider text-sm">{t("room.waiting")}</h2>
@@ -130,6 +130,7 @@ export default function Room() {
         replay.clear();
       }
       if (r.status === "programming" && r.seconds_left != null) setEndsAt(Date.now() + r.seconds_left * 1000);
+      if (r.status === "finished" || r.status === "lobby") replay.clear();
     } else if (msg.type === "board") setBoard(msg.board);
     else if (msg.type === "chat") setChat((c) => [...c, msg.msg].slice(-50));
     else if (msg.type === "turn_result") {
@@ -187,7 +188,12 @@ export default function Room() {
   const submit = () => send({ type: "program", program, final: true });
 
   const status = curFrame ? phaseText(t, curFrame, "") : room.status === "finished" ? t("sandbox.gameover") : t("game.programming");
-  const footer = curFrame ? <PlaybackControls replay={replay} /> : room.status === "programming" ? (
+  const footer = curFrame ? (
+    <>
+      <PlaybackControls replay={replay} />
+      {replay.ended && room.status === "resolving" && <span className="font-mono-rs text-[11px] text-[#ff9a1f] px-1" data-testid="waiting-others">{t("room.waitOthers")}</span>}
+    </>
+  ) : room.status === "programming" ? (
     <>
       <span className={`font-title text-sm px-2 flex items-center gap-1 ${secs <= 10 ? "text-red-400" : "text-zinc-100"}`} data-testid="room-timer">
         <Timer size={14} /> {t("room.timeLeft", { s: secs })}

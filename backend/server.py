@@ -286,13 +286,21 @@ async def room_ws(ws: WebSocket, code: str, token: str = ""):
         await ws.send_json({"type": "board", "board": boards_mod.get_board(room.board_id)})
     try:
         while True:
-            msg = await ws.receive_json()
+            try:
+                msg = await ws.receive_json()
+            except ValueError:
+                continue
             if msg.get("type") == "leave":
                 await room.disconnect(u["id"], ws, leaving=True)
                 await ws.close()
                 return
-            await room.handle(u["id"], msg)
+            try:
+                await room.handle(u["id"], msg)
+            except (ValueError, TypeError, KeyError, AttributeError) as e:
+                logger.warning("bad room message %s: %s", msg, e)
     except (WebSocketDisconnect, RuntimeError):
+        pass
+    finally:
         await room.disconnect(u["id"], ws)
 
 

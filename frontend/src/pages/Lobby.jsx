@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import api from "../lib/api";
+import api, { formatApiError } from "../lib/api";
 import { useI18n } from "../i18n";
 import { Users, Plus, LogIn, RefreshCw, Map } from "lucide-react";
 
@@ -13,8 +13,12 @@ function CreateRoom({ boards, onCreated }) {
   const [boardId, setBoardId] = useState("arena");
   const [max, setMax] = useState(2);
   const create = async () => {
-    const { data } = await api.post("/rooms", { name: name || null, board_id: boardId, max_players: max });
-    onCreated(data.code);
+    try {
+      const { data } = await api.post("/rooms", { name: name || null, board_id: boardId, max_players: max });
+      onCreated(data.code);
+    } catch (e) {
+      toast.error(formatApiError(e.response?.data?.detail));
+    }
   };
   return (
     <div className="rs-steel rs-bolts rounded-lg p-4 space-y-3" data-testid="create-room">

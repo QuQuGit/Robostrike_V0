@@ -1,0 +1,45 @@
+{
+  "summary": "Iteration 4: tested online rooms (REST, WebSocket, UI), remembered speed and sandbox regressions. Backend: the 51 old pytest tests pass. The new file tests/test_rooms_iter4.py has 11 tests: 9 pass, 2 fail because of real bugs. ws_smoke.py passes. Passing: rooms REST (auth required, create/list/get, unknown -> 404, bad board -> 404, max_players clamped to 2-4); WS auth/not_found errors; room full; game already started; not_ready error; host-only settings; leaving in the lobby removes the player; chat broadcast; seconds_left about 30; 2-action submit -> 'penalty' frame first with dmg 4; AFK -> auto resolve at 30s with 6 dmg, player lives 3->2, respawn frame, turn 2 after the replay timeout; full game -> game_over winner R1, room finished winner 'Admin'; host start -> room back to lobby (non-host start ignored). Frontend (admin 1600x900 + player 390x844 mobile in two contexts): sandbox cards/resolve/playback/new turn work; speed ×1->×2->×4->×1; rs_speed_sandbox survives a reload; lobby test IDs are present and an unknown code shows the 'Salon introuvable' toast; create -> /room/{code} with the site header hidden; join from the list and by code; start-btn disabled until the guest is ready; chat works; a third user gets the 'Salon plein' toast and goes back to /lobby; the timer counts down (30s->28s); ProgrammingPanel and submit work on both; 'Validé' shows in player-list; playback defaults to ×4 and rs_speed_online is saved after a click; Tour: 2 comes back with empty slots; room-leave works; no mobile horizontal overflow; no page errors. TWO MAJOR BUGS: (1) the server only reads the last submitter's replay_done after the replay timeout, so every turn waits about 19s; (2) the game-over banner and the rematch button never appear in the UI.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "WS /api/ws/rooms/{code} (rooms.py set_program -> resolve)", "issue": "set_program awaits self.resolve() inside the last submitter's receive loop. resolve() then waits for replay_event (up to frames*0.65+3s, about 19s). The server cannot read that player's replay_done or chat in the meantime, so every turn only moves on after the timeout (measured 19.3s instead of under 1s). Fix: asyncio.create_task(self.resolve()) in set_program (and keep the 'resolving' status guard).", "priority": "HIGH"}
+    ],
+    "minor": [
+      {"endpoint": "WS room_ws (server.py)", "issue": "Only WebSocketDisconnect/RuntimeError are caught. A malformed message (e.g. settings max_players:'abc' -> ValueError in rooms.py:153, or non-JSON text) kills the socket and skips room.disconnect(), so a stale socket and 'connected' player stay in the room. Wrap room.handle in try/except Exception (ignore bad messages) and always call disconnect in finally."},
+      {"endpoint": "game_engine penalty frame", "issue": "The AFK penalty ignores invuln (a robot that just respawned still takes penalty damage). Check that this is intended."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Room.jsx game-over", "issue": "The gameover-banner (and rematch-btn) only render when room.status==='finished' && !curFrame. replay.clear() is only called when a new programming turn starts, so after the last turn's replay the frames stay loaded, curFrame is never null, and the banner never shows. The host has no way to send the room back to the lobby from the UI (waited over 45s at frame 25/25). Fix: call replay.clear() when room.status becomes 'finished' (e.g. in the room message handler), or use (!curFrame || replay.ended) in the condition.", "selector": "[data-testid=gameover-banner], [data-testid=rematch-btn]", "priority": "HIGH"}
+    ],
+    "integration_issues": [
+      {"flow": "Turn transition", "issue": "Because of the backend resolve() blocking bug, both clients sit on the last replay frame for about 15s after playback ends before Tour N+1 starts, and nothing tells them they are waiting for the other players.", "affected_selectors": ["[data-testid=turn-label]", "[data-testid=frame-label]"]}
+    ],
+    "design_issues": [
+      {"screen": "Lobby", "issues": ["CreateRoom.create has no try/catch: a failed POST /rooms gives an unhandled promise rejection and no toast", "The sonner toast covers the header's user area (cosmetic)"]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_rooms_iter4.py", "/app/backend/tests/ws_smoke.py", "/app/test_reports/pytest/pytest_iter4.xml"],
+  "action_items": [
+    "rooms.py set_program: run resolve in a separate task (asyncio.create_task) so the last submitter's replay_done/chat are processed and the next turn starts as soon as everyone has watched the replay",
+    "Room.jsx: clear the replay (or show the banner once replay.ended) when room.status === 'finished' so gameover-banner and rematch-btn appear",
+    "server.py room_ws: catch generic exceptions from receive_json/room.handle (ignore bad messages) and always call room.disconnect in finally",
+    "Lobby.jsx: add try/catch + error toast for room creation"
+  ],
+  "critical_code_review_comments": [
+    "rooms.py: resolve() is awaited from inside a client's handler. Any long await in the handler blocks that client's socket loop; long-running turn orchestration should run as a background task.",
+    "server.py room_ws: there is no generic exception guard, so one bad payload drops the connection without cleanup.",
+    "Room.jsx: the replay lifecycle only resets on the next programming turn, so end-of-game states depend on replay.clear().",
+    "A player who disconnects mid-game still counts as active, so every turn waits the full 30s for them. Consider auto-submitting or skipping offline players.",
+    "useReplay: rs_speed_online is only written when the user clicks; the default ×4 comes from code (acceptable)."
+  ],
+  "updated_files": ["/app/backend/tests/test_rooms_iter4.py"],
+  "success_rate": {"backend": "60/62 tests pass (97%); 2 failures are real bugs", "frontend": "~92%: every flow except the game-over banner/rematch"},
+  "test_credentials": "admin@robostrike.com/admin123, player@robostrike.com/player123, test_ui3@robostrike.com/third123 (registered for the room-full test)",
+  "seed_data_creation": "Registered test users: test_ui3@robostrike.com, test_dbg3@robostrike.com, test_<random>@robostrike.com (password third123). Rooms are in memory only.",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Run: REACT_APP_BACKEND_URL=... pytest tests/test_rooms_iter4.py -n 0 (it needs -n 0 because xdist is enabled by default; it takes about 2.5 min with the 30s AFK test and the 3-turn game-over test). test_full_match_penalty_and_turn2 asserts that turn 2 starts within 5s after both replay_done (it fails today at 19s). test_malformed_message_does_not_break_room fails today. For the UI game over: the player clicks submit-program-btn with empty slots for 3 turns (6 dmg each) -> eliminated; check that gameover-banner and rematch-btn appear. Two browser contexts work through page.context.browser.new_context().",
+  "rca of the issue": "Turn delay: Room.handle('program', final) -> set_program -> await resolve() -> await wait_for(replay_event). That runs inside room_ws's while-loop for the last submitter, so ws.receive_json() for that user is not called until the timeout, and its replay_done is never seen. Repro: both submit, both send replay_done immediately -> turn 2 arrives about 19s later. Missing banner: Room.jsx line 212 requires !curFrame, but replay.frames is only cleared at line 130 (new programming turn), which never happens after game over."
+}

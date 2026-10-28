@@ -216,9 +216,11 @@ class Room:
         if final:
             await self.push_state()
             if all(self.programs.get(u, {}).get("final") for u in self._active_uids()):
-                await self.resolve()
+                asyncio.create_task(self.resolve())
 
     async def resolve(self):
+        if self.status != "programming":
+            return
         self.status = "resolving"
         self.deadline = None
         board = boards_mod.get_board(self.board_id)
