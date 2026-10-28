@@ -11,7 +11,7 @@ from datetime import datetime, timezone, timedelta
 import bcrypt
 import jwt
 from bson import ObjectId
-from fastapi import FastAPI, APIRouter, HTTPException, Header, Depends
+from fastapi import FastAPI, APIRouter, HTTPException, Header, Depends, WebSocket, WebSocketDisconnect
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, EmailStr, Field
@@ -19,6 +19,7 @@ from typing import List, Optional
 
 import boards as boards_mod
 from game_engine import resolve_turn, SLOTS
+import rooms as rooms_mod
 
 # ---------------------------------------------------------------------------
 mongo_url = os.environ["MONGO_URL"]
@@ -224,6 +225,75 @@ async def sandbox_resolve(body: ResolveBody):
         raise HTTPException(status_code=404, detail="Board not found")
     robots = [r.model_dump() for r in body.robots]
     return resolve_turn(board, robots)
+
+
+# ---------------------------------------------------------------------------
+# online rooms (REST + WebSocket)
+# ---------------------------------------------------------------------------
+class CreateRoomBody(BaseModel):
+    name: Optional[str] = None
+    board_id: str = "arena"
+    max_players: int = 2
+
+
+async def user_from_token(token: str) -> Optional[dict]:
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGO])
+        return await db.users.find_one({"_id": ObjectId(payload["sub"])})
+    except Exception:
+        return None
+
+
+@api.get("/rooms")
+async def list_rooms(user: dict = Depends(get_current_user)):
+    rooms_mod.cleanup_rooms()
+    return [r.summary() for r in rooms_mod.ROOMS.values() if r.status == "lobby"]
+
+
+@api.post("/rooms")
+async def create_room(body: CreateRoomBody, user: dict = Depends(get_current_user)):
+    if not boards_mod.get_board(body.board_id):
+        raise HTTPException(status_code=404, detail="Board not found")
+    u = public_user(user)
+    room = rooms_mod.create_room(u, body.name, body.board_id, body.max_players)
+    return room.summary()
+
+
+@api.get("/rooms/{code}")
+async def get_room(code: str, user: dict = Depends(get_current_user)):
+    room = rooms_mod.ROOMS.get(code.upper())
+    if not room:
+        raise HTTPException(status_code=404, detail="Room not found")
+    return room.summary()
+
+
+@api.websocket("/ws/rooms/{code}")
+async def room_ws(ws: WebSocket, code: str, token: str = ""):
+    await ws.accept()
+    user = await user_from_token(token)
+    room = rooms_mod.ROOMS.get(code.upper())
+    if user is None or room is None:
+        await ws.send_json({"type": "error", "detail": "not_found" if user else "auth"})
+        await ws.close()
+        return
+    u = public_user(user)
+    err = await room.join(u, ws)
+    if err:
+        await ws.send_json({"type": "error", "detail": err})
+        await ws.close()
+        return
+    if room.status != "lobby":
+        await ws.send_json({"type": "board", "board": boards_mod.get_board(room.board_id)})
+    try:
+        while True:
+            msg = await ws.receive_json()
+            if msg.get("type") == "leave":
+                await room.disconnect(u["id"], ws, leaving=True)
+                await ws.close()
+                return
+            await room.handle(u["id"], msg)
+    except (WebSocketDisconnect, RuntimeError):
+        await room.disconnect(u["id"], ws)
 
 
 # ---------------------------------------------------------------------------

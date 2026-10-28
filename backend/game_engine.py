@@ -325,6 +325,17 @@ def resolve_turn(board, robots_in):
         frames.append({"slot": slot, "phase": phase, "robots": _snapshot(robots),
                        "events": events, "beams": beams, "taken": sorted(taken)})
 
+    # online AFK penalty: 1 damage per missing action, before slot 1
+    events, beams = [], []
+    for r in robots:
+        pen = int(r.get("penalty") or 0)
+        if pen > 0 and _active(r):
+            r["hp"] = max(0, r["hp"] - pen)
+            events.append({"t": "penalty", "robot": r["name"], "dmg": pen})
+    if events:
+        _resolve_deaths(board, robots, events, beams)
+        frame(0, "penalty", events, beams)
+
     for slot in range(SLOTS):
         for r in robots:
             r["shield"] = _active(r) and r["compiled"][slot][0] == "shield"

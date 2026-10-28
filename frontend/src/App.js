@@ -12,6 +12,7 @@ import Sandbox from "./pages/Sandbox";
 import Lobby from "./pages/Lobby";
 import Profile from "./pages/Profile";
 import Leaderboard from "./pages/Leaderboard";
+import Room from "./pages/Room";
 
 function Protected({ children }) {
   const { user, loading } = useAuth();
@@ -36,6 +37,7 @@ function Shell() {
         <Route path="/home" element={<Protected><Home /></Protected>} />
         <Route path="/sandbox" element={<Protected><Sandbox /></Protected>} />
         <Route path="/lobby" element={<Protected><Lobby /></Protected>} />
+        <Route path="/room/:code" element={<Protected><Room /></Protected>} />
         <Route path="/profile" element={<Protected><Profile /></Protected>} />
         <Route path="/leaderboard" element={<Protected><Leaderboard /></Protected>} />
         <Route path="*" element={<Navigate to="/" replace />} />

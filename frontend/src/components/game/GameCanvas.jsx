@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { previewPath } from "./cards";
+import { useI18n } from "../../i18n";
 
 /* ---------- helpers ---------- */
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -44,8 +45,11 @@ const ROBOT_SPRITE = {
 };
 ["floor.jpg", "pit.jpg", ...Object.values(ROBOT_SPRITE).map((s) => s[0])].forEach(sprite);
 
-export default function GameCanvas({ board, robots, beams, plans = [], activeId, taken = [] }) {
+export default function GameCanvas({ board, robots, beams, plans = [], activeId, taken = [], events }) {
+  const { t } = useI18n();
   const canvasRef = useRef(null);
+  const popRef = useRef([]);
+  const prevRobotsRef = useRef(robots);
   const wrapRef = useRef(null);
   const dispRef = useRef({});
   const fxRef = useRef({ t0: 0, list: [] });
@@ -70,6 +74,28 @@ export default function GameCanvas({ board, robots, beams, plans = [], activeId,
     const recoil = Object.fromEntries(list.filter((b) => b.by).map((b) => [b.by, b.type]));
     fxRef.current = { t0: performance.now(), list, recoil };
   }, [beams]);
+
+  // floating "+1 Bombe" / "+5 PV" / "-3 PV" popups
+  useEffect(() => {
+    const prev = prevRobotsRef.current || [];
+    prevRobotsRef.current = robots;
+    const now = performance.now();
+    (events || []).forEach((e) => {
+      const r = robots.find((x) => x.name === e.robot);
+      if (!r) return;
+      let text, color;
+      if (e.t === "pickup" && e.item === "life") {
+        const before = prev.find((x) => x.id === r.id)?.hp ?? 0;
+        text = `+${Math.max(0, r.max_hp - before)} ${t("game.hp")}`; color = "#4ade80";
+      } else if (e.t === "pickup") {
+        text = `+1 ${t(`item.${e.item}`)}`; color = "#ffb347";
+      } else if (e.t === "penalty") {
+        text = `-${e.dmg} ${t("game.hp")}`; color = "#f87171";
+      } else return;
+      popRef.current.push({ id: r.id, x: r.x, y: r.y, text, color, t0: now });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [events]);
 
   useEffect(() => {
     let raf;
@@ -103,6 +129,8 @@ export default function GameCanvas({ board, robots, beams, plans = [], activeId,
       plans.forEach((p) => drawPlan(ctx, p, cell, now, p.id === activeId));
       robots.forEach((r) => drawRobot(ctx, r, dispRef.current, cell, now, r.id === activeId, fxRef.current));
       drawEffects(ctx, fxRef.current, cell, now);
+      popRef.current = popRef.current.filter((p) => now - p.t0 < 1500);
+      popRef.current.forEach((p) => drawPopup(ctx, p, dispRef.current[p.id], cell, now));
       ctx.restore();
     };
     draw();
@@ -617,6 +645,22 @@ function drawBubble(ctx, cx, cy, cell, now, faint) {
   ctx.strokeStyle = "rgba(224,242,254,0.9)"; ctx.lineWidth = cell * 0.03;
   ctx.beginPath(); ctx.arc(cx, cy, R * 0.86, rot, rot + 0.9); ctx.stroke();
   ctx.beginPath(); ctx.arc(cx, cy, R * 0.86, rot + Math.PI, rot + Math.PI + 0.6); ctx.stroke();
+  ctx.restore();
+}
+
+function drawPopup(ctx, p, d, cell, now) {
+  const k = (now - p.t0) / 1500;
+  const x = ((d ? d.x : p.x) + 0.5) * cell;
+  const y = (d ? d.y : p.y) * cell - cell * 0.15 - k * cell * 0.7;
+  const pop = Math.min(1, k / 0.12);
+  ctx.save();
+  ctx.globalAlpha = k < 0.7 ? 1 : 1 - (k - 0.7) / 0.3;
+  ctx.font = `700 ${Math.max(11, cell * 0.28) * (0.6 + 0.4 * pop)}px 'Russo One', sans-serif`;
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.lineWidth = Math.max(3, cell * 0.07); ctx.strokeStyle = "rgba(0,0,0,0.9)"; ctx.lineJoin = "round";
+  ctx.strokeText(p.text, x, y);
+  ctx.shadowColor = p.color; ctx.shadowBlur = cell * 0.25;
+  ctx.fillStyle = p.color; ctx.fillText(p.text, x, y);
   ctx.restore();
 }
 

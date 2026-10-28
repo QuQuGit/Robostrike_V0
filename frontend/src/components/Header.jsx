@@ -10,7 +10,7 @@ export default function Header() {
   const nav = useNavigate();
   const loc = useLocation();
 
-  if (!user || loc.pathname === "/sandbox") return null;
+  if (!user || loc.pathname === "/sandbox" || loc.pathname.startsWith("/room/")) return null;
 
   const links = [
     { to: "/home", label: t("nav.home") },
