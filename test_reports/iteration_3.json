@@ -1,0 +1,39 @@
+{
+  "summary": "Iteration 3: tested the backend and frontend for boosts, item cards, pickups, rotators, death/respawn and the one-screen game layout. Backend: 50 pytest tests (29 existing + 21 new in test_robostrike_iter3.py), 49 pass. Passing: board extras (rotators and pickups on all 3 boards), sandbox/new items [], turbo,turbo,right (5,1)N -> (8,1) dir 0, turbo+forward moves 2, turbo+laser ignored, item cards without inventory ignored, bomb with items (3 dmg, range 3, not at 4, removed from items), double_laser item, pickups (bomb added to items, life sets hp 5, 'taken' holds the id, a pickup is only taken once per turn and is back next turn), rotators +1/-1 in the board phase, falling and laser deaths (dead=true/alive=false, no later actions, final 'respawn' frame at spawn with hp 5, invuln true, lives-1), invuln blocks damage then resets, elimination after 3 turns. One failure: an item card placed right after a boost is ignored but still removed from the inventory. Frontend (admin): no site header on /sandbox; the toolbar test IDs work; sandbox-exit goes to /home (header comes back). At 1920x950 and 1600x900 there is no page scroll and the board, plates, console and resolve button are all visible. Cards: Avancer/Reculer/Boost/Gauche/Droite/Laser/Blast plus Double tir/Bombe/Bouclier with count 0 and disabled; no U-turn card. After Boost, laser and blast are disabled; badges ×4 / ×3 / ×2 are correct; 20 random programs were all valid. A 3-robot UI scenario passed: R1/R3 kill each other in S5 and KO shows on their plates, the R2 strafe picks up double_laser and its lightning icon shows in robot-items-1, a respawn frame closes the turn (25/25), new turn gives 'Tour: 2', and R2's Double tir card shows count 1 and goes back to 0 (disabled) after use. Mobile 390x844: tray-left/right scroll (0 -> 198 -> 0) and the flows work, BUT the page overflows horizontally by 52px (scrollWidth 442) because the toolbar's right group does not wrap. No console errors.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/sandbox/resolve (game_engine.compile_program)", "issue": "An item card (bomb/double_laser/shield) placed right after a turbo is ignored, but it is still taken from stock and from robot.items, so the item is lost. The stock.remove/used.append runs before the boost check sets a=None. The UI blocks this combination today, but the server should not lose the item."},
+      {"endpoint": "startup seed_admin", "issue": "If the existing admin's password differs from ADMIN_PASSWORD, it is rehashed and overwritten. The playbook says the seed should never change an existing admin's password. There is also no brute-force lockout on /api/auth/login."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Sandbox toolbar (mobile 390x844)", "issue": "Horizontal overflow: document scrollWidth is 442 on a 390 viewport. The right group (board-select, robots-select, sandbox-reset, lang-toggle-game) is `flex ml-auto` with no wrap, and the board select's long name 'Arène Ouverte / Open Arena' pushes sandbox-reset and lang-toggle-game partly or fully off screen.", "selector": "[data-testid='board-select'] parent div", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Card tray (desktop)", "issues": ["The item card heads are truncated ('Double t...'), and the 0-count badge is hard to read on the greyed cards."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_robostrike.py", "/app/backend/tests/test_robostrike_iter3.py", "/app/test_reports/pytest/pytest_results_iter3.xml"],
+  "action_items": [
+    "In compile_program, check the boost rule before taking an item from stock, so an item card placed after a boost stays in the inventory",
+    "Fix the mobile toolbar overflow: add flex-wrap/min-w-0 to the right-hand group and/or set max-width or w-full on board-select below the sm breakpoint",
+    "Optional: show the full item card labels or shorten them; seed_admin should not overwrite an existing admin's password"
+  ],
+  "critical_code_review_comments": [
+    "game_engine.compile_program: the item is consumed before the boost check sets it to None (see minor backend issue).",
+    "Board lasers fire in every slot's board phase (up to 6 damage per turn for a robot standing in column 4/5 on the arena). It is consistent, but check this is the intended balance.",
+    "A robot that ends a move in a hole is only marked dead in the 'resolve' phase, so during that slot's board phase it can still be hit by board lasers and block conveyors.",
+    "GameCanvas.jsx is 695 lines, at the 700-line split threshold.",
+    "Sandbox.jsx: resolve() and startSandbox() still have no try/catch or loading guard (carried over from iteration 2)."
+  ],
+  "updated_files": ["/app/backend/tests/test_robostrike_iter3.py"],
+  "success_rate": {"backend": "98% (49/50)", "frontend": "95% (all flows pass; mobile horizontal overflow)"},
+  "test_credentials": "admin@robostrike.com / admin123",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "UI scenario for KO/items: 3 robots on arena, R1 laser x6, R3 laser x6 (they face each other on row 0 and die in S5), R2 turbo,turbo,turbo,right,turbo,forward strafes north onto the (9,3) conveyor and then moves W onto double_laser (7,2). Arena board lasers in columns 4/5 hit robots every slot, so avoid them in tests. test_robostrike_iter3.py::TestBoost::test_turbo_bomb_does_not_consume_item is expected to fail until the compile_program fix."
+}

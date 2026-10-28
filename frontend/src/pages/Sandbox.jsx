@@ -140,8 +140,8 @@ export default function Sandbox() {
         <h1 className="font-title text-sm text-zinc-100 flex items-center gap-1.5 uppercase tracking-wider">
           <Swords size={15} className="text-[#ff9a1f]" /> <span className="hidden sm:inline">{t("sandbox.title")}</span>
         </h1>
-        <div className="flex items-center gap-1.5 ml-auto">
-          <select data-testid="board-select" value={boardId} onChange={(e) => setBoardId(e.target.value)} className="rs-select">
+        <div className="flex items-center gap-1.5 ml-auto min-w-0">
+          <select data-testid="board-select" value={boardId} onChange={(e) => setBoardId(e.target.value)} className="rs-select max-w-[150px] sm:max-w-none">
             {boards.map((b) => (<option key={b.id} value={b.id}>{b.name}</option>))}
           </select>
           <select data-testid="robots-select" value={numRobots} onChange={(e) => setNumRobots(Number(e.target.value))} className="rs-select">

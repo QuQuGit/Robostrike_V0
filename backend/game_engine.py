@@ -81,18 +81,18 @@ def compile_program(program, items):
     for a in prog:
         if a not in ACTION_IDS:
             a = None
-        if a in ITEM_ACTIONS:
-            if a in stock:
-                stock.remove(a)
-                used.append(a)
-            else:
-                a = None
         if a == "turbo":
             boost += 1
             out.append(("turbo", 0))
             continue
         if boost and a is not None and a not in MOVES:
             a = None
+        if a in ITEM_ACTIONS:
+            if a in stock:
+                stock.remove(a)
+                used.append(a)
+            else:
+                a = None
         out.append((a, 1 + boost if a in MOVES else 0))
         boost = 0
     return out, used

@@ -221,7 +221,8 @@ body {
 .rs-hp-on { background: linear-gradient(180deg, #ffd27a, #ff9a1f 60%, #d9640a); box-shadow: 0 0 6px rgba(255,154,31,0.7); }
 .rs-hp-low { background: linear-gradient(180deg, #ff8a8a, #ef4444); box-shadow: 0 0 6px rgba(239,68,68,0.7); }
 
-.rs-card-head { font-size: 9px !important; }
+.rs-card-head { font-size: 8.5px !important; letter-spacing: -0.02em; padding-left: 0 !important; padding-right: 0 !important; }
+.rs-card:disabled .rs-card-count { opacity: 1; }
 .rs-card-item { border-style: double; border-width: 3px; }
 .rs-card-count {
   position: absolute; top: -5px; right: -5px; min-width: 17px; height: 17px; padding: 0 4px;

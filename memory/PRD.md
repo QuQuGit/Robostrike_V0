@@ -44,6 +44,15 @@ Déploiement cible : Vercel (front) + Render (back WebSockets) + MongoDB Atlas.
 - Testing: iteration_2 frontend 100% (flows + mobile 390 without overflow).
 - Known issue: header nav links are hidden on mobile (no hamburger menu).
 
+## Iteration 3 (2026-06) — rules + game screen, tested (iteration_3: backend 50/50 after fix, frontend OK)
+- Default hand: forward, backward, left, right, laser, blast, boost (turbo). U-turn removed.
+- Boost: no effect in its own slot. Each stacked boost adds +1 cell to the next move; left/right after a boost becomes a lateral move (1+n cells) with no rotation. Weapons and items cannot follow a boost (greyed in the UI, ignored by the server, and the item is not consumed).
+- Pickups on fixed cells: bomb, double_laser and shield go to robot.items as one-use cards; life restores 5 HP. A picked item is greyed for the rest of the turn and comes back next turn (frames[].taken).
+- Turntables: board.rotators, rot = +1 (right) / -1 (left), applied in the board phase after conveyors.
+- Destroyed robot: dead=true, hidden from the board, remaining actions cancelled. It respawns in the final 'respawn' frame with 5 HP and is invulnerable for the next turn. Explosion effect on death.
+- Visuals: full-cell conveyors (rails, moving slats, chevrons, rollers), burst icon for Blast, turntables and pickups drawn on the canvas, rolling treads, recoil and muzzle flash.
+- Game screen: site header hidden on /sandbox, compact toolbar (exit, board, robots, reset, FR/EN), everything fits on one desktop screen, smaller cards and slots.
+
 ## Backlog (prioritized)
 ### P0 (next)
 - Multijoueur temps réel : WebSockets, salons/lobby, salle d'attente, timer 30s, synchro d'état, reconnexion.
