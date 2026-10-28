@@ -1,0 +1,31 @@
+{
+  "summary": "Frontend-only retest of the Sandbox visual rework, at desktop 1920x1080 and mobile 390x844, logged in as admin. Every requested flow passed: canvas, ROBOSTRIKE title plate, phase label and turn label ('Tour: 1'); board-select for foundry/cross/arena; robots-select for 2/3/4, with robot tabs that show sprite thumbnails (256px images, none broken), 5 HP segments and 3 lives; cards fill slots in order, slots-count shows n/6, clicking a filled slot empties it and the next card refills that gap, random fills 6 and disables the cards, clear empties; tray-left/right scroll (mobile 0 -> 258 -> 0); resolving with an incomplete program shows the toast 'Tous les robots doivent avoir 6 actions.'; resolve -> phase-label shows 'RÉSOLUTION · S1 · ...', frame-label shows 'Image x/24', prev/play/next all work, the event log lists events (R1 pivote, R2 pivote); new-turn returns to programming with 'Tour: 2' and 0/6 slots. Mobile: horizontal overflow 0, canvas 356px wide inside the 390px viewport, robot plates in 2 columns (4 robots = 2x2), 6 slots of 51x68px each, all usable. No console or page errors on either viewport.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Header (mobile 390)", "issues": ["The nav links (Accueil/Sandbox/Multijoueur/Classement/Profil) are hidden on mobile, and the screenshots show no hamburger or other way to reach them; only the logo, language toggle and logout are visible. Please check that mobile users can navigate."]},
+      {"screen": "Sandbox desktop 1920x1080", "issues": ["The resolve button and the card console sit below the fold, so the user has to scroll between the cards/slots and the board. Consider a shorter board or putting the console beside it."]},
+      {"screen": "Program slots (mobile)", "issues": ["A slot holding Shield (def category) looked much dimmer than the other filled slots in the mobile screenshot; the screenshot may have caught a transition. Check the slotNeon colour contrast for the 'def' category."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Optional: give mobile a way to reach the nav links (hamburger or similar)",
+    "Optional: wrap the api.post in resolve() and startSandbox() in try/catch with an error toast (today a network error gives an unhandled promise rejection and no feedback)",
+    "Optional: in newTurn, `findIndex(...) || 0` yields -1 when every robot is eliminated (-1 is truthy). Use an explicit check, e.g. `Math.max(0, idx)`"
+  ],
+  "critical_code_review_comments": [
+    "Sandbox.jsx resolve()/startSandbox(): no error handling or loading state around the API calls; double-clicking resolve can fire 2 requests.",
+    "Sandbox.jsx newTurn: activeIdx can become -1 when all robots are eliminated (findIndex -1 || 0 evaluates to -1), so activeRobot is undefined. It is guarded later, but the code is fragile.",
+    "GameCanvas.jsx is 549 lines, close to the 700-line split threshold."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (not requested)", "frontend": "100% of requested flows"},
+  "test_credentials": "admin@robostrike.com / admin123",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Sandbox testids: board-select, robots-select, sandbox-reset, game-canvas, board-title, phase-label, turn-label, robot-tab-N, robot-lives-N, card-<actionId>, card-tray, tray-left/right, slot-0..5, slots-count, program-random, program-clear, resolve-btn, step-prev/play/next, frame-label, new-turn-btn, event-log. The UI defaults to French. Login testids: login-email, login-password, auth-submit."
+}

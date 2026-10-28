@@ -37,6 +37,13 @@ Déploiement cible : Vercel (front) + Render (back WebSockets) + MongoDB Atlas.
 - [x] Pages : Landing, Home, Profil (XP/niveau/stats), Classement, Lobby (placeholder).
 - [x] i18n FR/EN avec bascule.
 
+## Visual rework v2 (2026-06, iter 2) — mockup-faithful, AWAITING USER VALIDATION
+- Illustrated sprites in /app/frontend/public/assets (robot_red/blue/green/yellow.png, floor.jpg, pit.jpg, machinery.jpg), generated then cut out.
+- GameCanvas: metal pipe frame + purple/orange neon side tubes, steel-plate tiles, square pits, continuous purple tube conveyors (corners, moving ribs, chevrons), emitters set into the frame with live orange beams that stop at walls/robots, steel wall bars, robot sprites + colored brackets, blue shield bubble, projected path of the programmed move (ghost).
+- Sandbox layout: 'ROBOSTRIKE' title plate, 'Phase de programmation / Tour' bar, playback tab under the board, robot plates (orange HP bar + heart), card console (colored card tray + 6 neon slots: purple = movement/defence, orange = weapons).
+- Testing: iteration_2 frontend 100% (flows + mobile 390 without overflow).
+- Known issue: header nav links are hidden on mobile (no hamburger menu).
+
 ## Backlog (prioritized)
 ### P0 (next)
 - Multijoueur temps réel : WebSockets, salons/lobby, salle d'attente, timer 30s, synchro d'état, reconnexion.

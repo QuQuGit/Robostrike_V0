@@ -79,7 +79,7 @@ export default function GameCanvas({ board, robots, beams, plans = [], activeId 
       const { board, robots, plans, activeId, availW } = dataRef.current;
       const canvas = canvasRef.current;
       if (!board || !canvas || !availW) return;
-      const maxH = window.innerHeight * 0.72;
+      const maxH = window.innerHeight * 0.62;
       const cell = Math.max(18, Math.floor(Math.min(availW / (board.width + 1.1), maxH / (board.height + 1.1), 84)));
       const FR = Math.round(cell * 0.55);
       const W = cell * board.width + FR * 2, H = cell * board.height + FR * 2;
