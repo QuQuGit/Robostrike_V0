@@ -66,6 +66,16 @@ Déploiement cible : Vercel (front) + Render (back WebSockets) + MongoDB Atlas.
   1 dmg per empty slot ('penalty' frame, ignores invulnerability), replay_done sync, game over + draw + rematch (back to the room lobby). No XP (user choice).
 - Known limits: rooms are lost if the backend restarts; single server process only.
 
+## Iteration 6 (2026-06) — tested iter 6 (backend 78/78, frontend 100%)
+- Blast: blue halo over the 8 surrounding cells, damages diagonals too.
+- Landing: disclaimer (idea taken from robostrike.com, a 2000s Flash game) + contact Q.levasseur@epmistes.net. Contact (mailto) link in the header, landing, sandbox and rooms.
+- Spanish (i18n_extra.js: ES + new keys). The button cycles FR→EN→ES, the browser language is detected, html lang is updated.
+- SEO: title/description/OG/Twitter/JSON-LD, canonical robostrike.app, robots.txt, sitemap.xml, per-route title (PageMeta). GA4 G-W0DNHTE9RB + SPA page_view tracking.
+- Auth: email confirmation required (403 email_not_verified), verify-email, resend-verification, forgot/reset password, single-use hashed tokens (TTL), 60s cooldown,
+  lockout after 5 failed logins (15 min), JWTs issued before a reset are invalidated. Resend through the user's own key (RESEND_API_KEY, EMAIL_FROM noreply@robostrike.app, FRONTEND_URL).
+  Without a key, the links are written to the backend log.
+- Deployment: frontend/vercel.json, render.yaml, DEPLOY.md, .env.example files, emergentintegrations removed from requirements (not on PyPI), httpx/websockets/dnspython added. CI=true build OK.
+
 ## Backlog (prioritized)
 ### P0 (next)
 - Multijoueur temps réel : WebSockets, salons/lobby, salle d'attente, timer 30s, synchro d'état, reconnexion.

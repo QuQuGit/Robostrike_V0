@@ -8,8 +8,12 @@ import { AuthShell, Field } from "./Login";
 export function CheckEmail({ email }) {
   const { t, lang } = useI18n();
   const resend = async () => {
-    await api.post("/auth/resend-verification", { email, lang });
-    toast.success(t("auth.resent"));
+    try {
+      await api.post("/auth/resend-verification", { email, lang });
+      toast.success(t("auth.resent"));
+    } catch (err) {
+      toast.error(formatApiError(err.response?.data?.detail) || err.message);
+    }
   };
   return (
     <div className="min-h-screen flex items-center justify-center px-4 rs-noise" data-testid="check-email">

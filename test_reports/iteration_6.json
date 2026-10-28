@@ -1,0 +1,46 @@
+{
+  "summary": "Iteration 6: email verification / resend / forgot / reset password (backend + UI), blast engine (8 neighbours), landing disclaimer + contact links, FR/EN/ES language cycle, SEO (titles, robots, sitemap, gtag, meta/OG/JSON-LD), sandbox blast, regression of rooms/sandbox. All requested features work. Backend 78/78 pytest pass (12 new auth tests + 66 regression). The iter4 rooms test helper had to be updated because new accounts now need email confirmation before login. No console or page errors on any flow tested.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/auth/login", "issue": "No brute-force lockout: 7 wrong passwords in a row all return 401, then the correct password returns 200 straight away (playbook item 4 not implemented)."},
+      {"endpoint": "_consume_token", "issue": "find_one then update_one is not atomic, so 2 concurrent requests with the same token could both succeed. Use find_one_and_update({hash, kind, used:false, expires_at>now}, {$set:{used:true}})."},
+      {"endpoint": "/api/auth/reset-password", "issue": "JWTs issued before a password reset stay valid for 7 days (no token version / password_changed_at check)."},
+      {"endpoint": "/api/auth/resend-verification", "issue": "Body lang is sent by the frontend but ignored (only forgot-password applies lang); the user.lang stored at register is used instead."},
+      {"endpoint": "CORS", "issue": "CORS_ORIGINS='*' together with allow_credentials=True in preview. OK because auth uses a Bearer header, but prod must set explicit origins (render.yaml/.env.example already do)."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Home multiplayer card", "issue": "Description still says 'Salons temps réel (bientôt)' although online rooms are live. Stale text.", "selector": "Home page Multijoueur card", "priority": "LOW"}
+    ],
+    "integration_issues": [
+      {"flow": "Resend verification (CheckEmail and Login)", "issue": "resend() has no try/catch, so a network error gives an unhandled promise rejection and no error toast.", "affected_selectors": ["resend-verification", "login-resend"]}
+    ],
+    "design_issues": [
+      {"screen": "Home after verify-email", "issues": ["The sonner success toast at top-right covers the header username/logout area for a few seconds"]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_auth_iter6.py", "/app/backend/tests/test_rooms_iter4.py", "/app/backend/tests/test_robostrike.py", "/app/test_reports/pytest/pytest_iter6_all.xml", "/app/test_reports/pytest/pytest_iter6_auth.xml"],
+  "action_items": [
+    "(Optional, security) Add login brute-force lockout (e.g. 5 failures per email+IP leads to a 15 min lock)",
+    "Make _consume_token atomic with find_one_and_update",
+    "Wrap resend() in CheckEmail/Login with try/catch plus an error toast",
+    "Update the Home multiplayer card text (remove '(bientôt)' / 'soon' / 'pronto')",
+    "(Optional) Invalidate existing JWTs after a password reset"
+  ],
+  "critical_code_review_comments": [
+    "Tokens are stored as sha256 hashes, single-use, with a TTL index and a 60s cooldown per user+kind. Good design.",
+    "Forgot/resend never reveal whether an account exists. Register still returns 'Email already registered' (enumeration is possible there, which is acceptable).",
+    "seed_admin only inserts when missing and never overwrites the password (OK). Passwords are bcrypt $2b$ (OK). Auth is Bearer/localStorage, not httpOnly cookies (by design per test_credentials.md).",
+    "GameCanvas.jsx is 765 lines (>700). Consider splitting the effects (blueBlast, explosion, beamLine) into a separate module.",
+    "sitemap.xml, robots.txt and canonical hardcode https://robostrike.app. Fine for prod, but needs updating if the domain changes.",
+    "requirements.txt has no emergentintegrations, so the Render build should work. vercel.json SPA rewrite excludes robots/sitemap correctly."
+  ],
+  "updated_files": ["/app/backend/tests/test_auth_iter6.py (new)", "/app/backend/tests/test_rooms_iter4.py (login helper now confirms email via the backend log link)"],
+  "success_rate": {"backend": "100% (78/78)", "frontend": "100% of requested flows"},
+  "seed_data_creation": "Created test users test_*@example.com / test_ui_cb0ea7@example.com (password now newpass789) and room TEST_iter6",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run pytest with -n 0 (xdist is on by default; test_robostrike.py's _last_link takes the globally newest link, which could race in parallel). Get tokens with: grep -a 'email to <email> not sent' /var/log/supervisor/backend.err.log. landing-enter only renders when logged in (use landing-register when logged out). The browser's default navigator language is en, so set localStorage rs_lang first. Verified in the UI: register -> check-email -> resend toast; unverified login -> unverified-notice; forgot -> forgot-sent; verify-email bad -> invalid message; verify-email good -> /home logged in; reset -> /login -> login with the new password; per-route titles in FR/EN/ES; html lang and rs_lang persist across reload; Spanish 'Entrar en la arena', 'Acciones disponibles', 'Avanzar'; nav-contact/landing-contact/disclaimer-email/game-contact/room-contact are all mailto:Q.levasseur@epmistes.net. Sandbox: 6x blast for R1, resolve returns 6 blast beams, no console errors. The blue halo was not clearly captured in a screenshot (short fade window), but the blueBlast code draws a 3x3 halo."
+}

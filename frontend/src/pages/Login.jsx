@@ -25,14 +25,19 @@ export default function Login() {
     } catch (err) {
       const d = err.response?.data?.detail;
       if (d === "email_not_verified") setUnverified(true);
+      else if (d === "too_many_attempts") toast.error(t("auth.tooMany"));
       else toast.error(formatApiError(d) || err.message);
     } finally {
       setLoading(false);
     }
   };
   const resend = async () => {
-    await api.post("/auth/resend-verification", { email, lang });
-    toast.success(t("auth.resent"));
+    try {
+      await api.post("/auth/resend-verification", { email, lang });
+      toast.success(t("auth.resent"));
+    } catch (err) {
+      toast.error(formatApiError(err.response?.data?.detail) || err.message);
+    }
   };
 
   return <AuthShell title={t("auth.login")} onSubmit={submit} loading={loading}

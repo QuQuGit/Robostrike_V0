@@ -60,7 +60,7 @@ function App() {
         <AuthProvider>
           <BrowserRouter>
             <Shell />
-            <Toaster theme="dark" position="top-right" />
+            <Toaster theme="dark" position="bottom-right" />
           </BrowserRouter>
         </AuthProvider>
       </I18nProvider>

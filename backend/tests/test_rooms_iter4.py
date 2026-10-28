@@ -17,6 +17,13 @@ def login(email, pw, username=None):
     r = requests.post(f"{BASE_URL}/api/auth/login", json={"email": email, "password": pw})
     if r.status_code != 200 and username:
         requests.post(f"{BASE_URL}/api/auth/register", json={"email": email, "password": pw, "username": username})
+        # since iteration 6 new accounts must confirm their email: grab the link from the backend log
+        import re, subprocess
+        time.sleep(0.5)
+        out = subprocess.run(["grep", "-a", f"email to {email} not sent", "/var/log/supervisor/backend.err.log"],
+                             capture_output=True, text=True).stdout
+        tok = re.findall(r"verify-email\?token=(\S+)", out)[-1]
+        requests.post(f"{BASE_URL}/api/auth/verify-email", json={"token": tok})
         r = requests.post(f"{BASE_URL}/api/auth/login", json={"email": email, "password": pw})
     assert r.status_code == 200, r.text
     return r.json()["token"]

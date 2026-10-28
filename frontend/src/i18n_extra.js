@@ -83,7 +83,8 @@ export const EXTRA = {
     "auth.forgotSent": "Si un compte existe pour cette adresse, un lien de réinitialisation vient d'être envoyé.",
     "auth.resetTitle": "Nouveau mot de passe", "auth.resetCta": "Changer le mot de passe",
     "auth.resetDone": "Mot de passe modifié. Vous pouvez vous connecter.", "auth.backLogin": "Retour à la connexion",
-    "auth.pwHint": "6 caractères minimum",
+    "auth.pwHint": "6 caractères minimum", "auth.tooMany": "Trop de tentatives. Réessayez dans 15 minutes.",
+    "home.lobbyDesc": "Salons en temps réel, de 2 à 4 joueurs. Affrontez d'autres pilotes.",
   },
   en: {
     "nav.contact": "Contact",
@@ -101,7 +102,8 @@ export const EXTRA = {
     "auth.forgotSent": "If an account exists for this address, a reset link has just been sent.",
     "auth.resetTitle": "New password", "auth.resetCta": "Change password",
     "auth.resetDone": "Password changed. You can now sign in.", "auth.backLogin": "Back to sign in",
-    "auth.pwHint": "6 characters minimum",
+    "auth.pwHint": "6 characters minimum", "auth.tooMany": "Too many attempts. Try again in 15 minutes.",
+    "home.lobbyDesc": "Real-time rooms for 2 to 4 players. Battle other pilots.",
   },
   es: {
     "nav.contact": "Contacto",
@@ -119,7 +121,7 @@ export const EXTRA = {
     "auth.forgotSent": "Si existe una cuenta con este correo, acabamos de enviar un enlace para restablecerla.",
     "auth.resetTitle": "Nueva contraseña", "auth.resetCta": "Cambiar la contraseña",
     "auth.resetDone": "Contraseña cambiada. Ya puedes iniciar sesión.", "auth.backLogin": "Volver al inicio de sesión",
-    "auth.pwHint": "Mínimo 6 caracteres",
+    "auth.pwHint": "Mínimo 6 caracteres", "auth.tooMany": "Demasiados intentos. Vuelve a intentarlo en 15 minutos.",
   },
 };
 

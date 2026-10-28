@@ -55,10 +55,12 @@ def verify_password(pw: str, hashed: str) -> bool:
 
 
 def create_token(user_id: str, email: str) -> str:
+    now = datetime.now(timezone.utc)
     payload = {
         "sub": user_id,
         "email": email,
-        "exp": datetime.now(timezone.utc) + timedelta(days=TOKEN_DAYS),
+        "iat": int(now.timestamp()),
+        "exp": now + timedelta(days=TOKEN_DAYS),
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGO)
 
@@ -93,6 +95,8 @@ async def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
     user = await db.users.find_one({"_id": ObjectId(payload["sub"])})
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
+    if payload.get("iat", 0) < user.get("pw_changed_at", 0):
+        raise HTTPException(status_code=401, detail="Token expired")
     return user
 
 
@@ -179,12 +183,24 @@ async def register(body: RegisterBody):
     return {"pending": True, "email": email}
 
 
+MAX_FAILS = 5
+LOCK_TIME = timedelta(minutes=15)
+
+
 @api.post("/auth/login")
 async def login(body: LoginBody):
     email = body.email.lower()
+    now = datetime.now(timezone.utc)
+    att = await db.login_attempts.find_one({"email": email})
+    if att and att.get("locked_until") and att["locked_until"].replace(tzinfo=timezone.utc) > now:
+        raise HTTPException(status_code=429, detail="too_many_attempts")
     user = await db.users.find_one({"email": email})
     if not user or not verify_password(body.password, user["password_hash"]):
+        fails = (att or {}).get("fails", 0) + 1
+        upd = {"fails": 0, "locked_until": now + LOCK_TIME} if fails >= MAX_FAILS else {"fails": fails}
+        await db.login_attempts.update_one({"email": email}, {"$set": upd}, upsert=True)
         raise HTTPException(status_code=401, detail="Invalid email or password")
+    await db.login_attempts.delete_one({"email": email})
     if not user.get("email_verified", True):
         raise HTTPException(status_code=403, detail="email_not_verified")
     return {"token": create_token(str(user["_id"]), email), "user": public_user(user)}
@@ -217,10 +233,12 @@ async def _issue_email_token(user: dict, kind: str) -> bool:
 
 
 async def _consume_token(raw: str, kind: str) -> dict:
-    tok = await db.email_tokens.find_one({"hash": _hash_token(raw), "kind": kind, "used": False})
-    if not tok or tok["expires_at"].replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+    tok = await db.email_tokens.find_one_and_update(
+        {"hash": _hash_token(raw), "kind": kind, "used": False, "expires_at": {"$gt": datetime.now(timezone.utc)}},
+        {"$set": {"used": True}},
+    )
+    if not tok:
         raise HTTPException(status_code=400, detail="invalid_or_expired_token")
-    await db.email_tokens.update_one({"_id": tok["_id"]}, {"$set": {"used": True}})
     user = await db.users.find_one({"_id": tok["user_id"]})
     if not user:
         raise HTTPException(status_code=400, detail="invalid_or_expired_token")
@@ -239,6 +257,8 @@ async def verify_email(body: TokenBody):
 async def resend_verification(body: EmailBody):
     user = await db.users.find_one({"email": body.email.lower()})
     if user and not user.get("email_verified", True):
+        if body.lang in ("fr", "en", "es"):
+            user["lang"] = body.lang
         await _issue_email_token(user, "verify")
     return {"ok": True}
 
@@ -257,7 +277,8 @@ async def forgot_password(body: EmailBody):
 async def reset_password(body: ResetBody):
     user = await _consume_token(body.token, "reset")
     await db.users.update_one({"_id": user["_id"]},
-                              {"$set": {"password_hash": hash_password(body.password), "email_verified": True}})
+                              {"$set": {"password_hash": hash_password(body.password), "email_verified": True,
+                                        "pw_changed_at": int(datetime.now(timezone.utc).timestamp())}})
     await db.email_tokens.update_many({"user_id": user["_id"], "kind": "reset"}, {"$set": {"used": True}})
     return {"ok": True}
 
