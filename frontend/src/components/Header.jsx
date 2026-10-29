@@ -22,8 +22,7 @@ export default function Header() {
   ];
 
   return (
-    <header className="sticky top-0 z-40 bg-[#0d0d10] border-b border-border relative" data-testid="main-header">
-      <span className="absolute top-1 right-4 text-xs text-muted-foreground">V0.1</span>
+    <header className="sticky top-0 z-40 bg-[#0d0d10] border-b border-border" data-testid="main-header">
       <div className="max-w-[1400px] mx-auto px-4 h-14 flex items-center gap-6">
         <Link to="/home" className="font-display font-black text-lg text-[#f97316] tracking-widest">
           ROBO<span className="text-white">STRIKE</span>
@@ -45,6 +44,10 @@ export default function Header() {
           ))}
         </nav>
         <div className="ml-auto flex items-center gap-3">
+          <span className="text-xs text-muted-foreground">
+            <span className="hidden sm:inline">Version : 0.01(préversion)</span>
+            <span className="sm:hidden">V0.01</span>
+          </span>
           <a
             href={`mailto:${CONTACT_EMAIL}`}
             data-testid="nav-contact"
