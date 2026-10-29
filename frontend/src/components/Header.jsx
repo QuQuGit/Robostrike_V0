@@ -22,8 +22,8 @@ export default function Header() {
   ];
 
   return (
-    <header className="sticky top-0 z-40 bg-[#0d0d10] border-b border-border" data-testid="main-header">
-      <div className="max-w-[1400px] mx-auto px-4 h-14 flex items-center gap-6">
+    <header className="sticky top-0 z-40 bg-[#0d0d10] border-b border-border relative" data-testid="main-header">
+      <span className="absolute top-1 right-4 text-xs text-muted-foreground">V0.01</span>
         <Link to="/home" className="font-display font-black text-lg text-[#f97316] tracking-widest">
           ROBO<span className="text-white">STRIKE</span>
         </Link>
