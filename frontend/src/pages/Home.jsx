@@ -35,14 +35,14 @@ export default function Home() {
             <c.icon className={c.primary ? "text-[#f97316]" : "text-[#8b5cf6]"} size={28} />
             <h2 className="font-display text-xl mt-4 mb-1">{c.title}</h2>
             <p className="text-sm text-muted-foreground mb-4">{c.desc}</p>
-            <span className={`font-mono-rs text-xs uppercase tracking-widest ${c.primary ? "text-[#f97316]" : "text-[#8b5cf6]"`}>
+            <span className={`font-mono-rs text-xs uppercase tracking-widest ${c.primary ? "text-[#f97316]" : "text-[#8b5cf6]"}`}>
               {c.cta} →
             </span>
           </Link>
         ))}
       </div>
 
-      {/* NOUVELLE SECTION : NOTE DE VERSION */}
+      {/* NOTE DE VERSION */}
       <div className="mt-12 p-6 rounded-sm bg-[#1a1a1a] border border-border/30">
         <h2 className="font-display text-lg text-[#f97316] mb-3">📌 Version Préliminaire</h2>
         <p className="text-sm text-muted-foreground mb-4">
@@ -73,7 +73,7 @@ export default function Home() {
             <ul className="list-disc list-inside text-sm text-muted-foreground space-y-0.5 ml-3">
               <li>Mouvement précis près des murs</li>
               <li>Revue des animations d'explosion (blast)</li>
-              <li>Placement des actions en fonction des boosts (impossibilité de finir par un boost)</li>
+              <li>Placement des actions en fonction des boosts</li>
               <li>Changement de l'icône de rotation après un boost pour une translation</li>
               <li>Gestion de 8 robots simultanés</li>
               <li>Points de départ et gestion des superpositions</li>
@@ -100,7 +100,7 @@ export default function Home() {
           <div>
             <h4 className="font-mono-rs text-xs text-muted-foreground mb-1">🏆 Classement & Statistiques</h4>
             <ul className="list-disc list-inside text-sm text-muted-foreground space-y-0.5 ml-3">
-              <li>Mise en place d'un classement de type "Skills" (inspiré Xbox)</li>
+              <li>Mise en place d'un classement de type "Skills"</li>
               <li>Écrans de résumé en fin de partie</li>
             </ul>
           </div>
