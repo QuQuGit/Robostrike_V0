@@ -42,14 +42,14 @@ export default function Home() {
         ))}
       </div>
 
-      {/* NOTE DE VERSION */}
+      {/* SECTION ROADMAP */}
       <div className="mt-12 p-6 rounded-sm bg-[#1a1a1a] border border-border/30">
         <h2 className="font-display text-lg text-[#f97316] mb-3">📌 Version Préliminaire</h2>
         <p className="text-sm text-muted-foreground mb-4">
           Ce site est actuellement en <strong>première préversion</strong>. La prochaine mise à jour majeure est prévue pour <strong>début décembre 2026</strong>.
         </p>
 
-        <h3 className="font-mono-rs text-xs uppercase tracking-wider text-[#8b5cf6] mb-2">Feuille de route</h3>
+        <h3 className="font-mono-rs text-xs uppercase tracking-wider text-[#8b5cf6] mb-4">Feuille de route</h3>
         <div className="space-y-3">
           <div>
             <h4 className="font-mono-rs text-xs text-muted-foreground mb-1">🎮 Déploiement & Plateformes</h4>
@@ -63,6 +63,7 @@ export default function Home() {
             <ul className="list-disc list-inside text-sm text-muted-foreground space-y-0.5 ml-3">
               <li>Placement des bombes</li>
               <li>Icône des lasers doubles</li>
+              <li>Fin des lasers traversant jusqu'au bout des cases</li>
               <li>Invisibilité au 1er tour après réapparition</li>
               <li>Autres corrections mineures</li>
             </ul>
@@ -78,6 +79,8 @@ export default function Home() {
               <li>Gestion de 8 robots simultanés</li>
               <li>Points de départ et gestion des superpositions</li>
               <li>Ordre des actions en fonction de l'ordre de validation</li>
+              <li>Ajout des tapis X2 (accélération)</li>
+              <li>Ajout des murs pousseurs</li>
             </ul>
           </div>
 
@@ -86,6 +89,8 @@ export default function Home() {
             <ul className="list-disc list-inside text-sm text-muted-foreground space-y-0.5 ml-3">
               <li>Génération de cartes par IA à la volée</li>
               <li>Visualisation miniature de la carte à la création de partie</li>
+              <li>Ajout de la carte "Blitz"</li>
+              <li>Ajout de la carte "Duel"</li>
             </ul>
           </div>
 
@@ -94,6 +99,21 @@ export default function Home() {
             <ul className="list-disc list-inside text-sm text-muted-foreground space-y-0.5 ml-3">
               <li>Refonte du lobby pour afficher l'ensemble des joueurs connectés</li>
               <li>Ajout d'un chat global</li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-mono-rs text-xs text-muted-foreground mb-1">💬 Communauté</h4>
+            <ul className="list-disc list-inside text-sm text-muted-foreground space-y-0.5 ml-3">
+              <li>Création d'un serveur Discord officiel</li>
+              <li>Intégration d'un lien vers le Discord sur le site</li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-mono-rs text-xs text-muted-foreground mb-1">📱 UI/UX & Responsivité</h4>
+            <ul className="list-disc list-inside text-sm text-muted-foreground space-y-0.5 ml-3">
+              <li>Refonte du layout smartphone : carte, actions et bouton validation sur un seul écran</li>
             </ul>
           </div>
 
