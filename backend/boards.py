@@ -100,6 +100,37 @@ BOARDS = {
             {"x": 6, "y": 8, "dir": 0},
         ],
     },
+    "manege": {
+        "id": "manege",
+        "name": "Manège / Merry-Go-Round",
+        "width": 9,
+        "height": 7,
+        "walls": [],
+        "holes": [[3, 3], [4, 4], [7, 5]],
+        "conveyors": [
+            {"x": 1, "y": 1, "dir": 1}, {"x": 2, "y": 1, "dir": 1},
+            {"x": 3, "y": 1, "dir": 1}, {"x": 4, "y": 1, "dir": 1},
+            {"x": 5, "y": 1, "dir": 1}, {"x": 6, "y": 1, "dir": 1},
+            {"x": 7, "y": 1, "dir": 2}, {"x": 7, "y": 2, "dir": 2},
+            {"x": 7, "y": 3, "dir": 3}, {"x": 6, "y": 3, "dir": 3},
+            {"x": 5, "y": 3, "dir": 2},
+            {"x": 5, "y": 4, "dir": 2},
+            {"x": 5, "y": 5, "dir": 3}, {"x": 4, "y": 5, "dir": 3},
+            {"x": 3, "y": 5, "dir": 3}, {"x": 2, "y": 5, "dir": 3},
+            {"x": 1, "y": 5, "dir": 0}, {"x": 1, "y": 4, "dir": 0},
+            {"x": 1, "y": 3, "dir": 0}, {"x": 1, "y": 2, "dir": 0},
+        ],
+        "lasers": [
+            {"x": 0, "y": 3, "dir": 1, "damage": 1},
+            {"x": 8, "y": 3, "dir": 3, "damage": 1},
+        ],
+        "spawns": [
+            {"x": 0, "y": 0, "dir": 1},
+            {"x": 8, "y": 0, "dir": 3},
+            {"x": 0, "y": 6, "dir": 1},
+            {"x": 8, "y": 6, "dir": 3},
+        ],
+    },
     "arena": {
         "id": "arena",
         "name": "Arène Ouverte / Open Arena",
@@ -156,6 +187,15 @@ EXTRAS = {
             {"id": "p4", "type": "life", "x": 9, "y": 6},
             {"id": "p5", "type": "bomb", "x": 5, "y": 3},
             {"id": "p6", "type": "shield", "x": 6, "y": 5},
+        ],
+    },
+    "manege": {
+        "rotators": [{"x": 2, "y": 2, "rot": 1}, {"x": 6, "y": 2, "rot": -1}],
+        "pickups": [
+            {"id": "p1", "type": "double_laser", "x": 4, "y": 1},
+            {"id": "p2", "type": "bomb", "x": 4, "y": 2},
+            {"id": "p3", "type": "shield", "x": 2, "y": 4},
+            {"id": "p4", "type": "life", "x": 6, "y": 4},
         ],
     },
     "arena": {
